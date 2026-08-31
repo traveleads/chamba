@@ -169,7 +169,7 @@
     }
     .progress-header { display: flex; justify-content: space-between; font-size: 15px; font-weight: 700; color: var(--accent); margin-bottom: 10px; }
     .progress-track { width: 100%; height: 8px; background: var(--border-subtle); border-radius: 4px; overflow: hidden; margin-bottom: 18px; }
-    .progress-fill { width: 0%; height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.3s ease; }
+    .progress-fill { width: 0%; height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.4s ease; }
     
     .step-item {
       display: flex;
@@ -644,7 +644,6 @@
       const calle = String(e.calle || e.direccion || '').trim();
       const loc = String(e.localidad || '').trim();
 
-      // Dirección consolidada completa
       const fullAddress = loc && !calle.toLowerCase().includes(loc.toLowerCase())
         ? `${calle}, ${loc}`
         : calle;
@@ -662,7 +661,6 @@
       }
     }
 
-    // Ordenamiento agrupando por localidad y orden continuo de calles
     unicos.sort((a, b) => {
       const locCompare = a.localidad.localeCompare(b.localidad);
       if (locCompare !== 0) return locCompare;
@@ -710,16 +708,41 @@ Devuelve únicamente un arreglo JSON con esta estructura exacta:
         }
       };
 
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
-      });
+      // Lista de modelos ordenados por prioridad de fallback automático
+      const modelos = [
+        "gemini-3.6-flash",
+        "gemini-2.0-flash",
+        "gemini-1.5-flash",
+        "gemini-1.5-flash-8b",
+        "gemini-flash-latest"
+      ];
 
-      const data = await res.json();
-      if (data.error) throw new Error(data.error.message || "Error en la API de Google");
+      let rawText = null;
+      let ultimoError = null;
 
-      const rawText = data.candidates[0].content.parts[0].text;
+      for (const modelo of modelos) {
+        try {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody)
+          });
+
+          const data = await res.json();
+          if (data.error) throw new Error(data.error.message || `Error en ${modelo}`);
+
+          if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
+            rawText = data.candidates[0].content.parts[0].text;
+            break; // Si respondió con éxito, salimos del bucle
+          }
+        } catch (err) {
+          console.warn(`Modelo ${modelo} no disponible o cuota agotada: ${err.message}. Probando modelo de respaldo...`);
+          ultimoError = err;
+        }
+      }
+
+      if (!rawText) throw ultimoError || new Error("No se pudo procesar con ningún modelo disponible.");
+
       const entregasCrudas = JSON.parse(rawText);
 
       updateStep(2, 70, "Organizando secuencia por calles...");
@@ -736,7 +759,7 @@ Devuelve únicamente un arreglo JSON con esta estructura exacta:
       }, 400);
 
     } catch (err) {
-      alert("Detalle: " + err.message);
+      alert("Aviso: " + err.message);
       document.getElementById('progressBox').style.display = 'none';
       document.getElementById('scanControls').style.display = 'block';
     }
