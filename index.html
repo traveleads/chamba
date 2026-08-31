@@ -445,7 +445,7 @@
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (pos) => { userCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude }; },
-        (err) => { console.warn("GPS no activo o denegado:", err.message); },
+        (err) => { console.warn("GPS no activo:", err.message); },
         { enableHighAccuracy: true, timeout: 6000 }
       );
     }
@@ -575,25 +575,28 @@
     }
   }
 
+  // Sintetizador con selección de voces premium (sin raspado)
   function hablar(texto) {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(texto);
       utterance.lang = 'es-AR';
-      utterance.rate = 0.95;
-      utterance.pitch = 1.0;
+      utterance.rate = 0.93; // Ritmo cómodo
+      utterance.pitch = 1.05; // Timbre cálido
 
       if (cachedVoices.length === 0) {
         cachedVoices = window.speechSynthesis.getVoices();
       }
 
-      const mejorVoz = cachedVoices.find(v => 
+      // Filtro de voces humanas / neurales
+      const vozHumana = cachedVoices.find(v => 
         (v.lang.includes('es') || v.lang.includes('ES')) &&
         (v.name.includes('Natural') || v.name.includes('Neural') || v.name.includes('Google') || 
-         v.name.includes('Paulina') || v.name.includes('Mónica') || v.name.includes('Helena'))
+         v.name.includes('Paulina') || v.name.includes('Mónica') || v.name.includes('Helena') ||
+         v.name.includes('Lucía') || v.name.includes('Siri') || v.name.includes('Microsoft'))
       ) || cachedVoices.find(v => v.lang.startsWith('es'));
 
-      if (mejorVoz) utterance.voice = mejorVoz;
+      if (vozHumana) utterance.voice = vozHumana;
       window.speechSynthesis.speak(utterance);
     }
   }
@@ -771,7 +774,6 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
 
       updateStep(2, 60, "Geolocalizando y analizando distancias...");
 
-      // 1. Limpieza y desduplicación inicial
       const vistos = new Set();
       const puntos = [];
 
@@ -796,7 +798,6 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
         }
       }
 
-      // 2. Geocodificación paralela
       await Promise.all(puntos.map(async (p) => {
         const coords = await geocodificarDireccion(p.direccion);
         if (coords) {
@@ -805,12 +806,11 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
         }
       }));
 
-      // 3. Regla estricta de 5 km para PUNTOS AISLADOS (Outliers)
+      // Filtro de 5 km para puntos solitarios
       const puntosConCoords = puntos.filter(p => p.lat !== null && p.lng !== null);
       if (puntosConCoords.length > 2) {
         puntos.forEach(p => {
           if (p.lat !== null && p.lng !== null) {
-            // Encuentra la distancia a la parada más cercana
             let minDist = Infinity;
             puntosConCoords.forEach(otro => {
               if (p !== otro) {
@@ -818,7 +818,6 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
                 if (dist < minDist) minDist = dist;
               }
             });
-            // Si la parada más próxima está a más de 5 km, es un punto aislado huérfano
             if (minDist > 5.0 && minDist !== Infinity) {
               p.fueraDeZona = true;
             }
@@ -828,17 +827,15 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
 
       updateStep(3, 85, "Armando secuencia continua por cercanía...");
 
-      // 4. Algoritmo TSP: Nearest Neighbor partiendo del GPS del furgón
       const validos = puntos.filter(p => !p.fueraDeZona);
       const descartados = puntos.filter(p => p.fueraDeZona);
 
       let rutaOrdenada = [];
       let noVisitados = [...validos];
-      let currentPos = userCoords; // Comienza desde la posición física del furgón
+      let currentPos = userCoords;
 
       while (noVisitados.length > 0) {
         if (!currentPos) {
-          // Si no hay GPS, toma el primer elemento como punto de anclaje
           rutaOrdenada.push(noVisitados.shift());
           currentPos = rutaOrdenada[rutaOrdenada.length - 1];
           continue;
@@ -855,7 +852,6 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
               bestIndex = index;
             }
           } else {
-            // Si no hay coordenadas, compara por proximidad de localidad
             const locA = (item.localidad || '').toLowerCase();
             const locCur = (currentPos.localidad || '').toLowerCase();
             if (locA && locCur && locA === locCur && bestDistance === Infinity) {
@@ -866,7 +862,7 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
 
         const proximo = noVisitados.splice(bestIndex, 1)[0];
         rutaOrdenada.push(proximo);
-        currentPos = proximo; // Avanza el puntero de proximidad
+        currentPos = proximo;
       }
 
       updateStep(3, 100, "Ruta lista");
