@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>Reparto Pro</title>
+  <title>Recorrido de hoy</title>
 
-  <meta property="og:title" content="Reparto Pro - Asistente de Logística" />
+  <meta property="og:title" content="Recorrido de hoy - Asistente de Logística" />
   <meta property="og:description" content="Organizador inteligente de rutas de reparto optimizadas por cercanía y sectores." />
   <meta property="og:image" content="https://traveleads.github.io/chamba/logo.png" />
   <meta property="og:image:width" content="500" />
@@ -61,21 +61,23 @@
     }
     .header h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
 
-    .btn-reset-header {
-      background: transparent;
+    /* Botón moderno de 3 puntos */
+    .btn-options-dots {
+      background: var(--card-bg);
       border: 1px solid var(--border-subtle);
-      color: var(--text-muted);
-      border-radius: 10px;
-      padding: 6px 10px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
+      color: var(--text-main);
+      border-radius: 12px;
+      width: 40px;
+      height: 40px;
       display: none;
       align-items: center;
-      gap: 5px;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: var(--card-shadow);
+      transition: transform 0.1s ease;
     }
-    .btn-reset-header:active { background: rgba(255, 69, 58, 0.1); color: var(--danger); }
-    .btn-reset-header svg { width: 14px; height: 14px; fill: currentColor; }
+    .btn-options-dots:active { transform: scale(0.92); background: var(--border-subtle); }
+    .btn-options-dots svg { width: 20px; height: 20px; fill: currentColor; }
 
     .welcome-card {
       background: var(--card-bg);
@@ -155,7 +157,6 @@
     .btn svg { width: 22px; height: 22px; fill: currentColor; }
     input[type="file"] { display: none; }
 
-    /* Contenedor de Proceso */
     .progress-box {
       display: none;
       background: var(--card-bg);
@@ -190,7 +191,6 @@
     }
     .step-icon svg { width: 16px; height: 16px; fill: currentColor; }
 
-    /* Animación de engranaje girando para el paso activo */
     .spin-gear {
       animation: spinAnimation 1.5s linear infinite;
     }
@@ -198,7 +198,6 @@
       100% { transform: rotate(360deg); }
     }
 
-    /* Resumen temporal durante el escaneo */
     .interim-summary {
       display: none;
       background: rgba(10, 132, 255, 0.1);
@@ -282,10 +281,9 @@
 
 <div class="container">
   <div class="header">
-    <h1>Reparto Pro</h1>
-    <button id="btnResetAll" class="btn-reset-header" onclick="gestionarNuevoEscaneo()">
-      <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
-      Opciones de escaneo
+    <h1>Recorrido de hoy</h1>
+    <button id="btnOptionsDots" class="btn-options-dots" onclick="gestionarNuevoEscaneo()" title="Opciones">
+      <svg viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
     </button>
   </div>
 
@@ -340,7 +338,6 @@
       <span>Conectando zonas por cercanía continua...</span>
     </div>
 
-    <!-- Indicador de cantidad de paquetes detectados en vivo -->
     <div class="interim-summary" id="interimSummary"></div>
   </div>
 
@@ -505,7 +502,7 @@
         if (ruta.length > 0) {
           document.getElementById('welcomeSection').style.display = 'none';
           document.getElementById('scanControls').style.display = 'none';
-          document.getElementById('btnResetAll').style.display = 'inline-flex';
+          document.getElementById('btnOptionsDots').style.display = 'inline-flex';
           
           const addresses = ruta.slice(0, 9).map(r => encodeURIComponent(r.direccion));
           const allMapsUrl = `https://www.google.com/maps/dir/${addresses.join('/')}`;
@@ -554,7 +551,6 @@
     }
   }
 
-  // Destraba el sintetizador de audio en móviles con el toque del usuario
   function desbloquearVoz() {
     if ('speechSynthesis' in window) {
       const u = new SpeechSynthesisUtterance('');
@@ -714,7 +710,6 @@ Estructura de salida JSON (arreglo de objetos):
 
       const entregas = JSON.parse(rawText);
 
-      // Extrae estadísticas en vivo para calmar la espera
       const totalEncontrados = entregas.length;
       const localidadesDetectadas = new Set(
         entregas.map(e => {
@@ -732,7 +727,7 @@ Estructura de salida JSON (arreglo de objetos):
 
       setTimeout(() => {
         document.getElementById('progressBox').style.display = 'none';
-        document.getElementById('btnResetAll').style.display = 'inline-flex';
+        document.getElementById('btnOptionsDots').style.display = 'inline-flex';
         configurarRuta(entregas);
       }, 900);
 
@@ -820,7 +815,6 @@ Estructura de salida JSON (arreglo de objetos):
     document.getElementById('summaryStrip').style.display = 'flex';
     document.getElementById('sumProgress').innerText = `${entregadosCount}/${total}`;
     
-    // Cálculo formato 24 horas estricto
     const minutosTotales = restantes * 8;
     const ahora = new Date();
     const horaFin = new Date(ahora.getTime() + minutosTotales * 60000);
