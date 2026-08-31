@@ -4,6 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>Reparto Pro</title>
+
+  <!-- Metadatos para vista previa en WhatsApp y redes -->
+  <meta property="og:title" content="Reparto Pro - Asistente de Logística" />
+  <meta property="og:description" content="Organizador inteligente de rutas de reparto optimizadas por cercanía y sectores." />
+  <meta property="og:image" content="https://traveleads.github.io/chamba/logo.png" />
+  <meta property="og:image:width" content="500" />
+  <meta property="og:image:height" content="500" />
+  <meta property="og:type" content="website" />
+  <link rel="apple-touch-icon" href="https://traveleads.github.io/chamba/logo.png" />
+
   <style>
     :root {
       --bg: #F4F4F6;
@@ -67,6 +77,26 @@
     }
     .btn-reset-header:active { background: rgba(255, 69, 58, 0.1); color: var(--danger); }
     .btn-reset-header svg { width: 14px; height: 14px; fill: currentColor; }
+
+    /* Tarjeta de Bienvenida */
+    .welcome-card {
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 24px 20px;
+      margin-bottom: 18px;
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--card-shadow);
+      text-align: center;
+    }
+    .welcome-logo {
+      width: 90px;
+      height: 90px;
+      border-radius: 20px;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    }
+    .welcome-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+    .welcome-subtitle { font-size: 14px; color: var(--text-muted); line-height: 1.4; }
 
     .config-box { background: var(--card-bg); padding: 12px; border-radius: 14px; margin-bottom: 16px; border: 1px solid var(--border-subtle); }
     .config-box input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border-subtle); font-size: 15px; outline: none; background: transparent; color: var(--text-main); }
@@ -235,6 +265,13 @@
     <input type="password" id="apiKeyInput" placeholder="Pegar Gemini API Key aquí" onchange="saveApiKey()" />
   </div>
 
+  <!-- Bienvenida inicial -->
+  <div class="welcome-card" id="welcomeSection">
+    <img class="welcome-logo" src="https://traveleads.github.io/chamba/logo.png" alt="Logo Reparto Pro" />
+    <div class="welcome-title" id="welcomeGreeting">¡Buenos días! 👋</div>
+    <div class="welcome-subtitle">Escanéen las planillas del día para armar la ruta más rápida y ordenada.</div>
+  </div>
+
   <div id="scanControls">
     <div id="scanStatus" class="scan-status">0 hojas listas</div>
 
@@ -287,6 +324,7 @@
     Ruta General en Maps
   </a>
 
+  <!-- Tarjeta Entrega Actual -->
   <div id="currentCard" class="card card-current" style="display: none;">
     <div class="delivery-badge">Próxima Parada</div>
     
@@ -347,6 +385,7 @@
 
   window.onload = () => {
     verificarLimpiezaDiaria();
+    ajustarSaludo();
 
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const keyFromUrl = hashParams.get('key');
@@ -363,6 +402,18 @@
 
     recuperarEstadoDelDia();
   };
+
+  function ajustarSaludo() {
+    const hora = new Date().getHours();
+    let saludo = "¡Buenos días! 👋";
+    if (hora >= 13 && hora < 20) {
+      saludo = "¡Buenas tardes! 👋";
+    } else if (hora >= 20 || hora < 6) {
+      saludo = "¡Buenas noches! 🌙";
+    }
+    const el = document.getElementById('welcomeGreeting');
+    if (el) el.innerText = saludo;
+  }
 
   function verificarLimpiezaDiaria() {
     const hoy = new Date().toISOString().slice(0, 10);
@@ -405,6 +456,7 @@
         novedades = JSON.parse(localStorage.getItem('reparto_novedades') || '[]');
 
         if (ruta.length > 0) {
+          document.getElementById('welcomeSection').style.display = 'none';
           document.getElementById('scanControls').style.display = 'none';
           document.getElementById('btnResetAll').style.display = 'inline-flex';
           
@@ -529,6 +581,7 @@
 
     if (fotosAcumuladas.length === 0) return;
 
+    document.getElementById('welcomeSection').style.display = 'none';
     document.getElementById('scanControls').style.display = 'none';
     updateStep(1, 15, "Obteniendo punto de partida GPS...");
 
@@ -551,14 +604,14 @@ LÓGICA DE OPTIMIZACIÓN POR BARRIDO TERRITORIAL (MUY ESTRICTA):
 2. NO ordenes por número correlativo.
 3. BARRIDO POR ZONA / LOCALIDAD:
    - Identifica la localidad/barrio más cercano al punto de inicio.
-   - ENTREGA PRIMERO TODAS las paradas de esa misma localidad antes de moverte a la siguiente. JAMÁS saltes a una parada aislada a 4 km si tienes 7 paradas a menos de 1 km en la zona actual.
+   - ENTREGA PRIMERO TODAS las paradas de esa misma localidad antes de moverte a la siguiente. JAMÁS saltes a una parada aislada a 4 km si tienes paradas a menos de 1 km en la zona actual.
    - Si una localidad tiene vías de tren, termina primero un lado de la vía y luego el otro antes de cambiar de localidad.
 4. TRANSICIÓN ENTRE LOCALIDADES (PUENTE):
-   - La última parada de una localidad DEBE ser la que esté geográficamente más orientada hacia la próxima localidad a visitar, para que el viaje entre barrios sea fluido y sin retrocesos.
+   - La última parada de una localidad DEBE ser la que esté geográficamente más orientada hacia la próxima localidad a visitar.
 5. Marca "fueraDeZona": true si una dirección queda a más de 5 km del conglomerado principal.
 
 Estructura de salida JSON (arreglo de objetos):
-- "paquete": identificador o número (string)
+- "paquete": número o identificador limpio sin símbolos extra (string)
 - "remitente": nombre y apellido
 - "direccion": calle, altura y localidad completa
 - "fueraDeZona": booleano`;
@@ -619,6 +672,8 @@ Estructura de salida JSON (arreglo de objetos):
     const vistos = new Set();
     const unicos = [];
     for (const e of entregas) {
+      // Limpia cualquier numeral previo que el modelo haya agregado
+      e.paquete = String(e.paquete).replace(/^#+/, '').trim();
       const key = (e.paquete + '|' + e.direccion).toLowerCase().trim();
       if (!vistos.has(key)) {
         vistos.add(key);
@@ -648,12 +703,14 @@ Estructura de salida JSON (arreglo de objetos):
   function renderNovedades() {
     if (novedades.length > 0) {
       const issuesList = document.getElementById('issuesList');
-      issuesList.innerHTML = novedades.map(n => `
+      issuesList.innerHTML = novedades.map(n => {
+        const pkgNum = String(n.paquete).replace(/^#+/, '');
+        return `
         <div style="margin-bottom: 8px;">
-          <strong>#${n.paquete}</strong> • ${n.direccion}<br>
+          <strong>#${pkgNum}</strong> • ${n.direccion}<br>
           <span style="color: var(--danger); font-size: 13px;">${n.motivo}</span>
-        </div>
-      `).join('');
+        </div>`;
+      }).join('');
       document.getElementById('issuesSection').style.display = 'block';
     } else {
       document.getElementById('issuesSection').style.display = 'none';
@@ -685,7 +742,9 @@ Estructura de salida JSON (arreglo de objetos):
     document.getElementById('sumEta').innerText = horaFin.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' hs';
 
     const cur = ruta[currentIndex];
-    document.getElementById('curPkg').innerText = `#${cur.paquete}`;
+    // Asegura exactamente un solo signo numeral
+    const cleanPkgNum = String(cur.paquete).replace(/^#+/, '');
+    document.getElementById('curPkg').innerText = `#${cleanPkgNum}`;
     document.getElementById('curAddress').innerText = cur.direccion;
     document.getElementById('curName').innerText = cur.remitente;
 
@@ -696,21 +755,23 @@ Estructura de salida JSON (arreglo de objetos):
     const queueList = document.getElementById('queueList');
     const siguientes = ruta.slice(currentIndex + 1);
     if (siguientes.length > 0) {
-      queueList.innerHTML = siguientes.map(s => `
+      queueList.innerHTML = siguientes.map(s => {
+        const nextCleanNum = String(s.paquete).replace(/^#+/, '');
+        return `
         <div class="stop-row">
-          <div class="stop-num">#${s.paquete}</div>
+          <div class="stop-num">#${nextCleanNum}</div>
           <div class="stop-info">
             <div class="stop-addr">${s.direccion}</div>
             <div class="stop-person">${s.remitente}</div>
           </div>
-        </div>
-      `).join('');
+        </div>`;
+      }).join('');
       document.getElementById('nextSection').style.display = 'block';
     } else {
       document.getElementById('nextSection').style.display = 'none';
     }
 
-    hablar(`Próxima parada, número ${cur.paquete}. En ${cur.direccion}`);
+    hablar(`Próxima parada, número ${cleanPkgNum}. En ${cur.direccion}`);
   }
 
   function marcarEntregado() {
