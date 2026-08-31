@@ -43,8 +43,31 @@
     body { background-color: var(--bg); color: var(--text-main); padding: 18px; padding-bottom: 50px; }
 
     .container { max-width: 480px; margin: 0 auto; }
-    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
     .header h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+
+    /* Botón discreto de reinicio manual */
+    .btn-reset-header {
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      border-radius: 10px;
+      padding: 6px 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      gap: 5px;
+    }
+    .btn-reset-header:active { background: rgba(255, 69, 58, 0.1); color: var(--danger); }
+    .btn-reset-header svg { width: 14px; height: 14px; fill: currentColor; }
 
     .config-box { background: var(--card-bg); padding: 12px; border-radius: 14px; margin-bottom: 16px; border: 1px solid var(--border-subtle); }
     .config-box input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border-subtle); font-size: 15px; outline: none; background: transparent; color: var(--text-main); }
@@ -204,6 +227,10 @@
 <div class="container">
   <div class="header">
     <h1>Reparto Pro</h1>
+    <button id="btnResetAll" class="btn-reset-header" onclick="reiniciarJornadaManual()">
+      <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+      Nuevo escaneo
+    </button>
   </div>
 
   <div class="config-box" id="apiKeySection">
@@ -225,7 +252,7 @@
     </button>
   </div>
 
-  <!-- Panel de progreso con pasos desglosados -->
+  <!-- Panel de progreso con pasos -->
   <div id="progressBox" class="progress-box">
     <div class="progress-header">
       <span id="progressTitle">Procesando planilla...</span>
@@ -340,7 +367,6 @@
     }
 
     recuperarEstadoDelDia();
-    iniciarGPSProximidad();
   };
 
   function verificarLimpiezaDiaria() {
@@ -348,12 +374,23 @@
     const fechaGuardada = localStorage.getItem('reparto_fecha');
 
     if (fechaGuardada && fechaGuardada !== hoy) {
-      localStorage.removeItem('reparto_ruta');
-      localStorage.removeItem('reparto_index');
-      localStorage.removeItem('reparto_historial');
-      localStorage.removeItem('reparto_novedades');
+      limpiarDatosLocales();
     }
     localStorage.setItem('reparto_fecha', hoy);
+  }
+
+  function limpiarDatosLocales() {
+    localStorage.removeItem('reparto_ruta');
+    localStorage.removeItem('reparto_index');
+    localStorage.removeItem('reparto_historial');
+    localStorage.removeItem('reparto_novedades');
+  }
+
+  function reiniciarJornadaManual() {
+    if (confirm("¿Querés reiniciar la jornada y escanear fotos nuevas?")) {
+      limpiarDatosLocales();
+      location.reload();
+    }
   }
 
   function guardarEstado() {
@@ -374,6 +411,7 @@
 
         if (ruta.length > 0) {
           document.getElementById('scanControls').style.display = 'none';
+          document.getElementById('btnResetAll').style.display = 'inline-flex';
           
           const addresses = ruta.slice(0, 9).map(r => encodeURIComponent(r.direccion));
           const allMapsUrl = `https://www.google.com/maps/dir/${addresses.join('/')}`;
@@ -421,36 +459,6 @@
     }
   }
 
-  function iniciarGPSProximidad() {
-    if ("geolocation" in navigator) {
-      navigator.geolocation.watchPosition(async (pos) => {
-        if (ruta.length === 0 || currentIndex >= ruta.length || proximidadAvisada) return;
-        const cur = ruta[currentIndex];
-        if (!cur.lat || !cur.lng) return;
-
-        const distMetros = calcularDistanciaMetros(pos.coords.latitude, pos.coords.longitude, cur.lat, cur.lng);
-        if (distMetros <= 250 && !proximidadAvisada) {
-          proximidadAvisada = true;
-          hablar(`Atención. A doscientos metros del número ${cur.paquete}.`);
-        }
-      }, (err) => console.warn("GPS pasivo:", err), { enableHighAccuracy: true });
-    }
-  }
-
-  function calcularDistanciaMetros(lat1, lon1, lat2, lon2) {
-    const R = 6371e3;
-    const phi1 = lat1 * Math.PI / 180;
-    const phi2 = lat2 * Math.PI / 180;
-    const deltaPhi = (lat2 - lat1) * Math.PI / 180;
-    const deltaLambda = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(deltaPhi/2) * Math.sin(deltaPhi/2) +
-              Math.cos(phi1) * Math.cos(phi2) *
-              Math.sin(deltaLambda/2) * Math.sin(deltaLambda/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
-  }
-
-  // Comprime la imagen para reducir peso y acelerar la respuesta
   function comprimirImagen(file) {
     return new Promise((resolve) => {
       const reader = new FileReader();
@@ -542,7 +550,6 @@ Estructura de salida JSON (arreglo de objetos):
       let rawText = null;
       let lastError = null;
 
-      // Animación de pasos mientras espera
       setTimeout(() => updateStep(2, 45, "Extrayendo destinatarios y domicilios..."), 800);
       setTimeout(() => updateStep(3, 70, "Separando sectores y cruces de vías..."), 1800);
       setTimeout(() => updateStep(4, 90, "Trazando la ruta más corta..."), 2800);
@@ -570,11 +577,11 @@ Estructura de salida JSON (arreglo de objetos):
       const entregas = JSON.parse(rawText);
       updateStep(4, 100, "¡Ruta consolidada con éxito!");
 
-      // Limpia las fotos acumuladas de la memoria RAM
       fotosAcumuladas = [];
 
       setTimeout(() => {
         document.getElementById('progressBox').style.display = 'none';
+        document.getElementById('btnResetAll').style.display = 'inline-flex';
         configurarRuta(entregas);
       }, 500);
 
