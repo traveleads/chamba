@@ -105,18 +105,33 @@
     .btn svg { width: 22px; height: 22px; fill: currentColor; }
     input[type="file"] { display: none; }
 
-    .progress-bar-container {
+    /* Contenedor de Proceso Dinámico */
+    .progress-box {
       display: none;
       background: var(--card-bg);
-      padding: 18px;
-      border-radius: 16px;
+      padding: 22px;
+      border-radius: 20px;
       margin-bottom: 16px;
       border: 1px solid var(--border-subtle);
-      text-align: center;
+      box-shadow: var(--card-shadow);
     }
-    .progress-track { width: 100%; height: 8px; background: var(--border-subtle); border-radius: 4px; overflow: hidden; margin-top: 10px; }
-    .progress-fill { width: 0%; height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.3s ease; }
-    .progress-label { font-size: 14px; font-weight: 600; color: var(--accent); }
+    .progress-header { display: flex; justify-content: space-between; font-size: 15px; font-weight: 700; color: var(--accent); margin-bottom: 10px; }
+    .progress-track { width: 100%; height: 8px; background: var(--border-subtle); border-radius: 4px; overflow: hidden; margin-bottom: 18px; }
+    .progress-fill { width: 0%; height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.4s ease; }
+    
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      transition: color 0.3s ease;
+    }
+    .step-item:last-child { margin-bottom: 0; }
+    .step-item.active { color: var(--accent); font-weight: 600; }
+    .step-item.done { color: var(--success); font-weight: 600; }
+    .step-icon { width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; }
 
     .scan-status {
       display: none;
@@ -163,7 +178,7 @@
       gap: 8px;
       margin-bottom: 6px;
     }
-    .pkg-icon { width: 32px; height: 32px; fill: var(--accent); }
+    .pkg-icon { width: 34px; height: 34px; fill: var(--accent); }
     .pkg-title { font-size: 44px; font-weight: 800; letter-spacing: -1.5px; color: var(--text-main); }
 
     .address-title { font-size: 22px; font-weight: 700; line-height: 1.25; margin-bottom: 4px; color: var(--text-main); }
@@ -178,7 +193,7 @@
       border-bottom: 1px solid var(--border-subtle);
     }
     .stop-row:last-child { border-bottom: none; }
-    .stop-num { font-weight: 800; font-size: 17px; min-width: 48px; color: var(--accent); }
+    .stop-num { font-weight: 800; font-size: 18px; min-width: 48px; color: var(--accent); }
     .stop-info { flex: 1; }
     .stop-addr { font-weight: 600; font-size: 15px; }
     .stop-person { font-size: 13px; color: var(--text-muted); }
@@ -210,10 +225,31 @@
     </button>
   </div>
 
-  <div id="progressWrapper" class="progress-bar-container">
-    <div id="progressLabel" class="progress-label">Iniciando lectura...</div>
+  <!-- Panel de progreso con pasos desglosados -->
+  <div id="progressBox" class="progress-box">
+    <div class="progress-header">
+      <span id="progressTitle">Procesando planilla...</span>
+      <span id="progressPercent">0%</span>
+    </div>
     <div class="progress-track">
       <div id="progressFill" class="progress-fill"></div>
+    </div>
+    
+    <div class="step-item" id="step1">
+      <span class="step-icon">○</span>
+      <span>Optimizando y leyendo fotos...</span>
+    </div>
+    <div class="step-item" id="step2">
+      <span class="step-icon">○</span>
+      <span>Extrayendo destinatarios y domicilios...</span>
+    </div>
+    <div class="step-item" id="step3">
+      <span class="step-icon">○</span>
+      <span>Separando por vías de tren y sectores...</span>
+    </div>
+    <div class="step-item" id="step4">
+      <span class="step-icon">○</span>
+      <span>Trazando la ruta más corta punto a punto...</span>
     </div>
   </div>
 
@@ -255,7 +291,6 @@
     </button>
   </div>
 
-  <!-- Botón Deshacer Entrega Anterior -->
   <button id="btnUndo" class="btn btn-undo" style="display: none;" onclick="deshacerUltimo()">
     <svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>
     Deshacer última entrega
@@ -267,7 +302,7 @@
   </div>
 
   <div id="issuesSection" class="card" style="display: none; border-color: rgba(255, 69, 58, 0.3);">
-    <div class="section-title" style="color: var(--danger);">Paquetes Aislados / Novedades</div>
+    <div class="section-title" style="color: var(--danger);">Aislados / Novedades</div>
     <div id="issuesList" style="font-size: 14px; line-height: 1.5;"></div>
   </div>
 </div>
@@ -275,7 +310,7 @@
 <script>
   let ruta = [];
   let currentIndex = 0;
-  let historialAcciones = []; // Guarda historial para deshacer
+  let historialAcciones = [];
   let novedades = [];
   let proximidadAvisada = false;
   let fotosAcumuladas = [];
@@ -289,7 +324,6 @@
   }
 
   window.onload = () => {
-    // Control de reseteo a las 00:00 hs (diario)
     verificarLimpiezaDiaria();
 
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
@@ -305,7 +339,6 @@
       if (configBox) configBox.style.display = 'none';
     }
 
-    // Cargar estado guardado si es del mismo día
     recuperarEstadoDelDia();
     iniciarGPSProximidad();
   };
@@ -315,7 +348,6 @@
     const fechaGuardada = localStorage.getItem('reparto_fecha');
 
     if (fechaGuardada && fechaGuardada !== hoy) {
-      // Pasaron las 00:00 hs: limpia entregas viejas
       localStorage.removeItem('reparto_ruta');
       localStorage.removeItem('reparto_index');
       localStorage.removeItem('reparto_historial');
@@ -353,18 +385,30 @@
           actualizarVista();
         }
       } catch (e) {
-        console.warn("Estado previo corrupto, reiniciando:", e);
+        console.warn("Error recuperando estado:", e);
       }
     }
   }
 
-  function setProgress(percent, text) {
-    const pWrapper = document.getElementById('progressWrapper');
-    const pFill = document.getElementById('progressFill');
-    const pLabel = document.getElementById('progressLabel');
-    pWrapper.style.display = 'block';
-    pFill.style.width = percent + '%';
-    pLabel.innerText = text;
+  function updateStep(stepNum, percent, activeText) {
+    document.getElementById('progressBox').style.display = 'block';
+    document.getElementById('progressFill').style.width = percent + '%';
+    document.getElementById('progressPercent').innerText = percent + '%';
+    document.getElementById('progressTitle').innerText = activeText;
+
+    for (let i = 1; i <= 4; i++) {
+      const el = document.getElementById('step' + i);
+      if (i < stepNum) {
+        el.className = 'step-item done';
+        el.querySelector('.step-icon').innerText = '✓';
+      } else if (i === stepNum) {
+        el.className = 'step-item active';
+        el.querySelector('.step-icon').innerText = '●';
+      } else {
+        el.className = 'step-item';
+        el.querySelector('.step-icon').innerText = '○';
+      }
+    }
   }
 
   function hablar(texto) {
@@ -387,7 +431,7 @@
         const distMetros = calcularDistanciaMetros(pos.coords.latitude, pos.coords.longitude, cur.lat, cur.lng);
         if (distMetros <= 250 && !proximidadAvisada) {
           proximidadAvisada = true;
-          hablar(`Atención. A doscientos metros del paquete ${cur.paquete}.`);
+          hablar(`Atención. A doscientos metros del número ${cur.paquete}.`);
         }
       }, (err) => console.warn("GPS pasivo:", err), { enableHighAccuracy: true });
     }
@@ -406,15 +450,46 @@
     return R * c;
   }
 
+  // Comprime la imagen para reducir peso y acelerar la respuesta
+  function comprimirImagen(file) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          const maxDim = 1200;
+
+          if (width > height && width > maxDim) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else if (height > maxDim) {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.82));
+        };
+      };
+    });
+  }
+
   async function agregarHoja(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    const base64Image = await toBase64(file);
-    const cleanedBase64 = base64Image.split(',')[1];
-    const mimeType = file.type || 'image/jpeg';
+    const base64DataUrl = await comprimirImagen(file);
+    const cleanedBase64 = base64DataUrl.split(',')[1];
 
-    fotosAcumuladas.push({ inlineData: { mimeType, data: cleanedBase64 } });
+    fotosAcumuladas.push({ inlineData: { mimeType: 'image/jpeg', data: cleanedBase64 } });
 
     const scanStatus = document.getElementById('scanStatus');
     scanStatus.innerText = `${fotosAcumuladas.length} hoja(s) agregada(s) al lote`;
@@ -438,15 +513,15 @@
     if (fotosAcumuladas.length === 0) return;
 
     document.getElementById('scanControls').style.display = 'none';
-    setProgress(25, `Analizando ${fotosAcumuladas.length} hoja(s)...`);
+    updateStep(1, 20, "Optimizando fotos y leyendo datos...");
 
     try {
       const prompt = `Analiza detalladamente todas las hojas de planilla adjuntas y extrae ABSOLUTAMENTE TODOS los paquetes listados.
 Consolida todo en una sola lista JSON válida.
 
 REGLAS ESTRICTAS DE LOGÍSTICA Y FILTRADO:
-1. DESDUPLICACIÓN: Si una misma dirección o número de paquete aparece más de una vez (por error de doble escaneo), consérvalo UNA SOLA VEZ.
-2. NO ordenes por número de paquete correlativo.
+1. DESDUPLICACIÓN: Si una misma dirección o número aparece más de una vez por error de doble foto, consérvalo UNA SOLA VEZ.
+2. NO ordenes por número correlativo.
 3. Agrupa primero por SECTORES GEOGRÁFICOS / LADOS DE LA VÍA DEL TREN (entregar primero todo el lado Oeste/Sur de las vías y luego todo el lado Este/Norte).
 4. Dentro de cada sector, encadena las paradas por cercanía física estricta.
 5. Marca "fueraDeZona": true si una dirección queda a más de 5 km del lote principal.
@@ -463,13 +538,17 @@ Estructura de salida JSON (arreglo de objetos):
         generationConfig: { responseMimeType: "application/json" }
       };
 
-      const modelsToTry = ["gemini-3.6-flash", "gemini-2.5-flash", "gemini-flash-latest"];
+      const modelsToTry = ["gemini-2.5-flash", "gemini-3.6-flash", "gemini-flash-latest"];
       let rawText = null;
       let lastError = null;
 
+      // Animación de pasos mientras espera
+      setTimeout(() => updateStep(2, 45, "Extrayendo destinatarios y domicilios..."), 800);
+      setTimeout(() => updateStep(3, 70, "Separando sectores y cruces de vías..."), 1800);
+      setTimeout(() => updateStep(4, 90, "Trazando la ruta más corta..."), 2800);
+
       for (const model of modelsToTry) {
         try {
-          setProgress(70, `Optimizando por cercanía y sectores...`);
           const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -489,21 +568,24 @@ Estructura de salida JSON (arreglo de objetos):
       if (!rawText) throw lastError || new Error("No se pudo procesar el lote.");
 
       const entregas = JSON.parse(rawText);
-      setProgress(100, "Ruta consolidada");
+      updateStep(4, 100, "¡Ruta consolidada con éxito!");
+
+      // Limpia las fotos acumuladas de la memoria RAM
+      fotosAcumuladas = [];
+
       setTimeout(() => {
-        document.getElementById('progressWrapper').style.display = 'none';
+        document.getElementById('progressBox').style.display = 'none';
         configurarRuta(entregas);
-      }, 400);
+      }, 500);
 
     } catch (err) {
       alert("Aviso: " + err.message);
-      document.getElementById('progressWrapper').style.display = 'none';
+      document.getElementById('progressBox').style.display = 'none';
       document.getElementById('scanControls').style.display = 'block';
     }
   }
 
   function configurarRuta(entregas) {
-    // Filtro estricto por si el modelo devolvió duplicados residuales
     const vistos = new Set();
     const unicos = [];
     for (const e of entregas) {
@@ -555,7 +637,6 @@ Estructura de salida JSON (arreglo de objetos):
     const restantes = total - currentIndex;
     const entregadosCount = historialAcciones.filter(h => h.tipo === 'entregado').length;
 
-    // Mostrar u ocultar botón de deshacer
     document.getElementById('btnUndo').style.display = (currentIndex > 0) ? 'inline-flex' : 'none';
 
     if (currentIndex >= total && total > 0) {
@@ -631,7 +712,6 @@ Estructura de salida JSON (arreglo de objetos):
     const ultimaAccion = historialAcciones.pop();
     currentIndex--;
 
-    // Si la última acción fue un fallo, lo removemos de la lista de novedades
     if (ultimaAccion.tipo === 'no_entregado') {
       const idxNov = novedades.findIndex(n => n.paquete === ultimaAccion.paquete);
       if (idxNov !== -1) novedades.splice(idxNov, 1);
@@ -640,15 +720,6 @@ Estructura de salida JSON (arreglo de objetos):
 
     guardarEstado();
     actualizarVista();
-  }
-
-  function toBase64(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = error => reject(error);
-    });
   }
 </script>
 </body>
