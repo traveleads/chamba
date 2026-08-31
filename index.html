@@ -326,15 +326,15 @@
     
     <div class="step-item" id="step1">
       <span class="step-icon" id="iconStep1">○</span>
-      <span>Extrayendo direcciones y localidades...</span>
+      <span>Leyendo datos de las planillas...</span>
     </div>
     <div class="step-item" id="step2">
       <span class="step-icon" id="iconStep2">○</span>
-      <span>Detectando puntos aislados huérfanos (> 5 km)...</span>
+      <span>Geolocalizando y filtrando aislados (> 5 km)...</span>
     </div>
     <div class="step-item" id="step3">
       <span class="step-icon" id="iconStep3">○</span>
-      <span>Calculando la ruta más cercana...</span>
+      <span>Optimizando recorrido continuo del furgón...</span>
     </div>
   </div>
 
@@ -403,6 +403,7 @@
   let fotosAcumuladas = [];
   let modoAnexo = false;
   let cachedVoices = [];
+  let userCoords = null;
 
   const SVG_GEAR = `<svg class="spin-gear" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>`;
 
@@ -418,6 +419,7 @@
     verificarLimpiezaDiaria();
     ajustarSaludo();
     cargarVoces();
+    solicitarGPS();
 
     if ('speechSynthesis' in window) {
       window.speechSynthesis.onvoiceschanged = cargarVoces;
@@ -438,6 +440,16 @@
 
     recuperarEstadoDelDia();
   };
+
+  function solicitarGPS() {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => { userCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude }; },
+        (err) => { console.warn("GPS no activo o denegado:", err.message); },
+        { enableHighAccuracy: true, timeout: 6000 }
+      );
+    }
+  }
 
   function cargarVoces() {
     if ('speechSynthesis' in window) {
@@ -516,20 +528,28 @@
           document.getElementById('scanControls').style.display = 'none';
           document.getElementById('btnOptionsDots').style.display = 'inline-flex';
           
-          if (ruta.length > 0) {
-            const addresses = ruta.slice(0, 9).map(r => encodeURIComponent(r.direccion));
-            const allMapsUrl = `https://www.google.com/maps/dir/${addresses.join('/')}`;
-            const btnAll = document.getElementById('btnAllMaps');
-            btnAll.href = allMapsUrl;
-            btnAll.style.display = 'inline-flex';
-          }
-
+          actualizarBotonRutaMaps();
           renderNovedades();
           actualizarVista(false);
         }
       } catch (e) {
         console.warn("Error recuperando estado:", e);
       }
+    }
+  }
+
+  function actualizarBotonRutaMaps() {
+    const btnAll = document.getElementById('btnAllMaps');
+    if (ruta.length > 0) {
+      const stops = ruta.slice(0, 9).map(r => encodeURIComponent(r.direccion));
+      const origin = userCoords ? `${userCoords.lat},${userCoords.lng}` : stops[0];
+      const destinations = userCoords ? stops : stops.slice(1);
+      
+      const allMapsUrl = `https://www.google.com/maps/dir/${origin}/${destinations.join('/')}`;
+      btnAll.href = allMapsUrl;
+      btnAll.style.display = 'inline-flex';
+    } else {
+      btnAll.style.display = 'none';
     }
   }
 
@@ -585,6 +605,31 @@
     }
   }
 
+  function calcularDistanciaKm(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+
+  async function geocodificarDireccion(addr) {
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addr)}&limit=1`;
+      const res = await fetch(url, { headers: { 'Accept-Language': 'es' } });
+      const data = await res.json();
+      if (data && data.length > 0) {
+        return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+      }
+    } catch (e) {
+      console.warn("Geocodificación fallida para:", addr);
+    }
+    return null;
+  }
+
   function comprimirImagen(file) {
     return new Promise((resolve) => {
       const reader = new FileReader();
@@ -620,6 +665,8 @@
     const file = event.target.files[0];
     if (!file) return;
 
+    solicitarGPS();
+
     const base64DataUrl = await comprimirImagen(file);
     const cleanedBase64 = base64DataUrl.split(',')[1];
 
@@ -637,51 +684,17 @@
     event.target.value = "";
   }
 
-  // Limpia "P-019", "PAQ-05", "#002" para que quede solo el número entero limpio
   function sanitizarNumeroPaquete(raw) {
     if (!raw) return "";
     let str = String(raw).trim();
-    // Remueve prefijos típicos como P-, PKG-, PAQ-, #
     str = str.replace(/^(p|pkg|paq|paquete|item)[\s\-_#]*/i, '');
     str = str.replace(/^#+/, '');
-    
-    // Si tiene ceros a la izquierda (ej: "019" -> "19") los normaliza si es un número válido
-    const matchNumero = str.match(/\d+/);
-    if (matchNumero) {
-      const parsed = parseInt(matchNumero[0], 10);
+    const match = str.match(/\d+/);
+    if (match) {
+      const parsed = parseInt(match[0], 10);
       return isNaN(parsed) ? str : String(parsed);
     }
     return str || "1";
-  }
-
-  function procesarYFiltrarEntregas(entregasCrudas) {
-    const vistos = new Set();
-    const procesadas = [];
-    
-    for (const e of entregasCrudas) {
-      const cleanPkg = sanitizarNumeroPaquete(e.paquete);
-      const calle = String(e.calle || e.direccion || '').trim();
-      const loc = String(e.localidad || '').trim();
-      const fueraDeZona = Boolean(e.fueraDeZona);
-
-      const fullAddress = loc && !calle.toLowerCase().includes(loc.toLowerCase())
-        ? `${calle}, ${loc}`
-        : calle;
-
-      const key = (cleanPkg + '|' + fullAddress).toLowerCase();
-      if (!vistos.has(key) && calle.length > 2) {
-        vistos.add(key);
-        procesadas.push({
-          paquete: cleanPkg || (procesadas.length + 1).toString(),
-          remitente: String(e.remitente || 'Destinatario').trim(),
-          direccion: fullAddress,
-          localidad: loc,
-          fueraDeZona: fueraDeZona
-        });
-      }
-    }
-
-    return procesadas;
   }
 
   async function procesarTodasLasHojas() {
@@ -698,38 +711,26 @@
     document.getElementById('welcomeSection').style.display = 'none';
     document.getElementById('scanControls').style.display = 'none';
     
-    updateStep(1, 30, "Extrayendo direcciones y localidades...");
+    updateStep(1, 25, "Extrayendo direcciones de las planillas...");
 
     try {
       const prompt = `Analiza estas planillas de reparto y extrae todas las entregas.
-
-REGLAS DE IDENTIFICACIÓN:
-1. "paquete": Extrae ÚNICAMENTE el número identificador (ejemplo: si en la hoja dice "P-019" o "PAQ 019", devuelve "19").
-2. "remitente": Nombre y apellido.
-3. "calle": Calle y altura.
-4. "localidad": Localidad o barrio.
-
-REGLA DE PUNTOS AISLADOS (OUTLIERS):
-- Si hay un grupo de paradas en una ciudad y otro grupo en otra ciudad (incluso a 10 km), AMBOS GRUPOS SON VÁLIDOS ("fueraDeZona": false).
-- Marca "fueraDeZona": true ÚNICAMENTE si hay 1 o 2 entregas solitarias totalmente huérfanas y aisladas a más de 5 km de cualquier otra parada.
+Es OBLIGATORIO extraer número de paquete, remitente o destinatario, calle con altura y localidad o barrio.
 
 Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
 [
   {
-    "paquete": "19",
+    "paquete": "1",
     "remitente": "Nombre y Apellido",
     "calle": "Calle y Altura",
-    "localidad": "Localidad",
-    "fueraDeZona": false
+    "localidad": "Localidad o Barrio"
   }
 ]`;
 
       const parts = [{ text: prompt }, ...fotosAcumuladas];
       const requestBody = {
         contents: [{ parts }],
-        generationConfig: { 
-          responseMimeType: "application/json"
-        }
+        generationConfig: { responseMimeType: "application/json" }
       };
 
       const modelos = [
@@ -768,9 +769,105 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
 
       const entregasCrudas = JSON.parse(rawText);
 
-      updateStep(2, 70, "Organizando secuencia por localidades y calles...");
+      updateStep(2, 60, "Geolocalizando y analizando distancias...");
 
-      const entregasProcesadas = procesarYFiltrarEntregas(entregasCrudas);
+      // 1. Limpieza y desduplicación inicial
+      const vistos = new Set();
+      const puntos = [];
+
+      for (const e of entregasCrudas) {
+        const cleanPkg = sanitizarNumeroPaquete(e.paquete);
+        const calle = String(e.calle || e.direccion || '').trim();
+        const loc = String(e.localidad || '').trim();
+        const fullAddress = loc && !calle.toLowerCase().includes(loc.toLowerCase()) ? `${calle}, ${loc}` : calle;
+        const key = (cleanPkg + '|' + fullAddress).toLowerCase();
+
+        if (!vistos.has(key) && calle.length > 2) {
+          vistos.add(key);
+          puntos.push({
+            paquete: cleanPkg || (puntos.length + 1).toString(),
+            remitente: String(e.remitente || 'Destinatario').trim(),
+            direccion: fullAddress,
+            localidad: loc,
+            lat: null,
+            lng: null,
+            fueraDeZona: false
+          });
+        }
+      }
+
+      // 2. Geocodificación paralela
+      await Promise.all(puntos.map(async (p) => {
+        const coords = await geocodificarDireccion(p.direccion);
+        if (coords) {
+          p.lat = coords.lat;
+          p.lng = coords.lng;
+        }
+      }));
+
+      // 3. Regla estricta de 5 km para PUNTOS AISLADOS (Outliers)
+      const puntosConCoords = puntos.filter(p => p.lat !== null && p.lng !== null);
+      if (puntosConCoords.length > 2) {
+        puntos.forEach(p => {
+          if (p.lat !== null && p.lng !== null) {
+            // Encuentra la distancia a la parada más cercana
+            let minDist = Infinity;
+            puntosConCoords.forEach(otro => {
+              if (p !== otro) {
+                const dist = calcularDistanciaKm(p.lat, p.lng, otro.lat, otro.lng);
+                if (dist < minDist) minDist = dist;
+              }
+            });
+            // Si la parada más próxima está a más de 5 km, es un punto aislado huérfano
+            if (minDist > 5.0 && minDist !== Infinity) {
+              p.fueraDeZona = true;
+            }
+          }
+        });
+      }
+
+      updateStep(3, 85, "Armando secuencia continua por cercanía...");
+
+      // 4. Algoritmo TSP: Nearest Neighbor partiendo del GPS del furgón
+      const validos = puntos.filter(p => !p.fueraDeZona);
+      const descartados = puntos.filter(p => p.fueraDeZona);
+
+      let rutaOrdenada = [];
+      let noVisitados = [...validos];
+      let currentPos = userCoords; // Comienza desde la posición física del furgón
+
+      while (noVisitados.length > 0) {
+        if (!currentPos) {
+          // Si no hay GPS, toma el primer elemento como punto de anclaje
+          rutaOrdenada.push(noVisitados.shift());
+          currentPos = rutaOrdenada[rutaOrdenada.length - 1];
+          continue;
+        }
+
+        let bestIndex = 0;
+        let bestDistance = Infinity;
+
+        noVisitados.forEach((item, index) => {
+          if (item.lat !== null && item.lng !== null && currentPos.lat !== null && currentPos.lng !== null) {
+            const d = calcularDistanciaKm(currentPos.lat, currentPos.lng, item.lat, item.lng);
+            if (d < bestDistance) {
+              bestDistance = d;
+              bestIndex = index;
+            }
+          } else {
+            // Si no hay coordenadas, compara por proximidad de localidad
+            const locA = (item.localidad || '').toLowerCase();
+            const locCur = (currentPos.localidad || '').toLowerCase();
+            if (locA && locCur && locA === locCur && bestDistance === Infinity) {
+              bestIndex = index;
+            }
+          }
+        });
+
+        const proximo = noVisitados.splice(bestIndex, 1)[0];
+        rutaOrdenada.push(proximo);
+        currentPos = proximo; // Avanza el puntero de proximidad
+      }
 
       updateStep(3, 100, "Ruta lista");
       fotosAcumuladas = [];
@@ -778,7 +875,7 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
       setTimeout(() => {
         document.getElementById('progressBox').style.display = 'none';
         document.getElementById('btnOptionsDots').style.display = 'inline-flex';
-        configurarRuta(entregasProcesadas);
+        configurarRuta(rutaOrdenada, descartados);
       }, 400);
 
     } catch (err) {
@@ -788,42 +885,21 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
     }
   }
 
-  function configurarRuta(entregasNuevas) {
-    let entregasConsolidadas = [];
+  function configurarRuta(rutaOptimizada, descartadosNuevos = []) {
     if (modoAnexo && ruta.length > 0) {
       const yaEntregados = ruta.slice(0, currentIndex);
-      const pendientesPrevios = ruta.slice(currentIndex);
-      entregasConsolidadas = [...yaEntregados, ...pendientesPrevios, ...entregasNuevas];
+      const pendientes = ruta.slice(currentIndex);
+      ruta = [...yaEntregados, ...pendientes, ...rutaOptimizada];
       modoAnexo = false;
     } else {
-      entregasConsolidadas = entregasNuevas;
+      ruta = rutaOptimizada;
       currentIndex = 0;
       historialAcciones = [];
     }
 
-    const validos = entregasConsolidadas.filter(e => !e.fueraDeZona);
-    const descartados = entregasConsolidadas.filter(e => e.fueraDeZona);
+    novedades = descartadosNuevos.map(d => ({ ...d, motivo: "Punto aislado (> 5 km de otras paradas)" }));
 
-    // Agrupamiento secuencial por localidades y calles
-    validos.sort((a, b) => {
-      const locCompare = a.localidad.localeCompare(b.localidad);
-      if (locCompare !== 0) return locCompare;
-      return a.direccion.localeCompare(b.direccion);
-    });
-
-    ruta = validos;
-    novedades = descartados.map(d => ({ ...d, motivo: "Punto aislado (>5 km de otras paradas)" }));
-
-    if (ruta.length > 0) {
-      const addresses = ruta.slice(0, 9).map(r => encodeURIComponent(r.direccion));
-      const allMapsUrl = `https://www.google.com/maps/dir/${addresses.join('/')}`;
-      const btnAll = document.getElementById('btnAllMaps');
-      btnAll.href = allMapsUrl;
-      btnAll.style.display = 'inline-flex';
-    } else {
-      document.getElementById('btnAllMaps').style.display = 'none';
-    }
-
+    actualizarBotonRutaMaps();
     guardarEstado();
     renderNovedades();
     actualizarVista(false);
@@ -883,7 +959,6 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
 
     const cur = ruta[currentIndex];
     
-    // Vista visual: #19
     document.getElementById('curPkg').innerText = `#${cur.paquete}`;
     document.getElementById('curAddress').innerText = cur.direccion;
     document.getElementById('curName').innerText = cur.remitente;
@@ -909,7 +984,6 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
       document.getElementById('nextSection').style.display = 'none';
     }
 
-    // Audio hablado: "Próxima parada, paquete número 19. En Calle 123"
     if (cantarPorVoz) {
       setTimeout(() => {
         hablar(`Próxima parada, paquete número ${cur.paquete}. En ${cur.direccion}`);
@@ -920,6 +994,7 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
   function marcarEntregado() {
     historialAcciones.push({ tipo: 'entregado', index: currentIndex });
     currentIndex++;
+    actualizarBotonRutaMaps();
     guardarEstado();
     actualizarVista(true);
   }
@@ -933,6 +1008,7 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
       historialAcciones.push({ tipo: 'no_entregado', index: currentIndex, paquete: cur.paquete });
       renderNovedades();
       currentIndex++;
+      actualizarBotonRutaMaps();
       guardarEstado();
       actualizarVista(true);
     }
@@ -950,6 +1026,7 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
       renderNovedades();
     }
 
+    actualizarBotonRutaMaps();
     guardarEstado();
     actualizarVista(true);
   }
