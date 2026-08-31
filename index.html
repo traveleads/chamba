@@ -6,212 +6,225 @@
   <title>Reparto Pro</title>
   <style>
     :root {
-      --bg: #F2F2F7;
+      --bg: #F4F4F6;
       --card-bg: #FFFFFF;
-      --accent: #007AFF;
-      --success: #34C759;
-      --warning: #FF9500;
-      --danger: #FF3B30;
-      --text: #1C1C1E;
-      --subtext: #8E8E93;
+      --text-main: #1C1C1E;
+      --text-muted: #8E8E93;
+      --accent: #0A84FF;
+      --accent-hover: #0071E3;
+      --success: #30D158;
+      --warning: #FF9F0A;
+      --danger: #FF453A;
+      --border-subtle: rgba(0, 0, 0, 0.08);
+      --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      --btn-inner-light: inset 0 1px 0 rgba(255, 255, 255, 0.25);
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif; }
-    body { background-color: var(--bg); color: var(--text); padding: 16px; padding-bottom: 40px; }
-
-    .container { max-width: 500px; margin: 0 auto; }
-    h1 { font-size: 26px; font-weight: 700; margin-bottom: 12px; text-align: center; }
-
-    .config-box { background: var(--card-bg); padding: 14px; border-radius: 16px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
-    .config-box input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #D1D1D6; font-size: 16px; outline: none; }
-
-    .card {
-      background: var(--card-bg);
-      border-radius: 20px;
-      padding: 20px;
-      margin-bottom: 16px;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #000000;
+        --card-bg: #1C1C1E;
+        --text-main: #F2F2F7;
+        --text-muted: #98989D;
+        --accent: #0A84FF;
+        --accent-hover: #409CFF;
+        --success: #32D74B;
+        --warning: #FFD60A;
+        --danger: #FF453A;
+        --border-subtle: rgba(255, 255, 255, 0.12);
+        --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+        --btn-inner-light: inset 0 1px 0 rgba(255, 255, 255, 0.15);
+      }
     }
 
-    .upload-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background-color: var(--accent);
-      color: white;
-      font-size: 20px;
-      font-weight: 600;
-      padding: 18px;
-      border-radius: 16px;
-      cursor: pointer;
-      text-align: center;
-      margin-bottom: 16px;
-      box-shadow: 0 4px 12px rgba(0, 122, 255, 0.25);
-    }
-    input[type="file"] { display: none; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background-color: var(--bg); color: var(--text-main); padding: 18px; padding-bottom: 50px; }
 
-    /* Barra de Progreso */
-    .progress-wrapper {
-      display: none;
-      background: var(--card-bg);
-      padding: 20px;
-      border-radius: 16px;
-      margin-bottom: 16px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-      text-align: center;
-    }
-    .progress-text { font-size: 15px; font-weight: 600; color: var(--accent); margin-bottom: 10px; }
-    .progress-bar-bg { width: 100%; height: 12px; background: #E5E5EA; border-radius: 6px; overflow: hidden; }
-    .progress-bar-fill { width: 0%; height: 100%; background: var(--accent); border-radius: 6px; transition: width 0.3s ease; }
-
-    /* Resumen y Estadísticas */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-    .stat-box {
-      background: var(--card-bg);
-      padding: 12px 6px;
-      border-radius: 14px;
-      text-align: center;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-    }
-    .stat-number { font-size: 20px; font-weight: 800; }
-    .stat-label { font-size: 11px; color: var(--subtext); font-weight: 600; margin-top: 2px; }
-
-    .status-badge {
-      background: #E5F0FF;
-      color: var(--accent);
-      padding: 10px 14px;
-      border-radius: 12px;
-      font-size: 15px;
-      font-weight: 600;
-      text-align: center;
-      margin-bottom: 16px;
-    }
-
-    /* Tarjeta foco actual */
-    .current-delivery { border: 3px solid var(--accent); background: #FFFFFF; }
-    .current-label { font-size: 14px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.5px; }
-    .pkg-number { font-size: 42px; font-weight: 800; color: var(--accent); margin: 6px 0; }
-    .address { font-size: 22px; font-weight: 700; line-height: 1.2; margin-bottom: 6px; }
-    .client-name { font-size: 18px; color: var(--subtext); margin-bottom: 16px; font-weight: 500; }
-
-    /* Botones de acción */
-    .action-btn {
-      display: block;
-      width: 100%;
-      padding: 16px;
-      border: none;
-      border-radius: 14px;
-      font-size: 17px;
-      font-weight: 600;
-      cursor: pointer;
-      margin-bottom: 10px;
-      text-align: center;
-      text-decoration: none;
-    }
-    .btn-maps { background-color: var(--accent); color: white; }
-    .btn-done { background-color: var(--success); color: white; }
-    .btn-failed { background-color: #FFECEB; color: var(--danger); border: 1px solid var(--danger); }
-    .btn-all-maps { background-color: #5856D6; color: white; }
-
-    /* Listas */
-    .next-list h3 { font-size: 18px; margin-bottom: 10px; color: var(--subtext); }
-    .item-row {
+    .container { max-width: 480px; margin: 0 auto; }
+    
+    .header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 0;
-      border-bottom: 1px solid #E5E5EA;
+      margin-bottom: 20px;
     }
-    .item-pkg { font-weight: 700; font-size: 18px; width: 65px; }
-    .item-info { flex: 1; font-size: 15px; }
-    .item-info span { display: block; color: var(--subtext); font-size: 13px; }
+    .header h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
 
-    .failed-card { border-left: 5px solid var(--warning); }
-    .discarded-card { border-left: 5px solid var(--danger); }
+    .config-box { background: var(--card-bg); padding: 12px; border-radius: 14px; margin-bottom: 16px; border: 1px solid var(--border-subtle); }
+    .config-box input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border-subtle); font-size: 15px; outline: none; background: transparent; color: var(--text-main); }
+
+    /* Tarjeta principal */
+    .card {
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 22px;
+      margin-bottom: 16px;
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--card-shadow);
+    }
+
+    /* Botones de acción táctiles */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 16px;
+      border-radius: 16px;
+      font-size: 17px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      border: 1px solid transparent;
+      box-shadow: var(--btn-inner-light), 0 4px 12px rgba(0, 0, 0, 0.12);
+      transition: transform 0.1s ease, filter 0.1s ease;
+      margin-bottom: 10px;
+    }
+    .btn:active { transform: scale(0.98); filter: brightness(0.92); }
+    
+    .btn-primary { background: var(--accent); color: #FFFFFF; }
+    .btn-success { background: var(--success); color: #FFFFFF; }
+    .btn-maps { background: #5856D6; color: #FFFFFF; }
+    .btn-outline-danger {
+      background: transparent;
+      color: var(--danger);
+      border-color: var(--danger);
+      box-shadow: none;
+    }
+    .btn svg { width: 22px; height: 22px; fill: currentColor; }
+    input[type="file"] { display: none; }
+
+    /* Barra de progreso simplificada */
+    .progress-bar-container {
+      display: none;
+      background: var(--card-bg);
+      padding: 18px;
+      border-radius: 16px;
+      margin-bottom: 16px;
+      border: 1px solid var(--border-subtle);
+      text-align: center;
+    }
+    .progress-track { width: 100%; height: 8px; background: var(--border-subtle); border-radius: 4px; overflow: hidden; margin-top: 10px; }
+    .progress-fill { width: 0%; height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.3s ease; }
+    .progress-label { font-size: 14px; font-weight: 600; color: var(--accent); }
+
+    /* Resumen de jornada limpio */
+    .summary-strip {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--card-bg);
+      padding: 12px 18px;
+      border-radius: 14px;
+      margin-bottom: 16px;
+      border: 1px solid var(--border-subtle);
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .summary-strip strong { color: var(--accent); font-weight: 700; }
+
+    /* Enfoque actual */
+    .delivery-badge {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent);
+      background: rgba(10, 132, 255, 0.12);
+      padding: 4px 10px;
+      border-radius: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+    .pkg-title { font-size: 38px; font-weight: 800; letter-spacing: -1px; color: var(--text-main); margin-bottom: 4px; }
+    .address-title { font-size: 21px; font-weight: 700; line-height: 1.25; margin-bottom: 4px; color: var(--text-main); }
+    .receiver-name { font-size: 16px; color: var(--text-muted); margin-bottom: 20px; font-weight: 500; }
+
+    /* Listas */
+    .section-title { font-size: 15px; font-weight: 600; color: var(--text-muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stop-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .stop-row:last-child { border-bottom: none; }
+    .stop-num { font-weight: 700; font-size: 16px; min-width: 50px; color: var(--text-muted); }
+    .stop-info { flex: 1; }
+    .stop-addr { font-weight: 600; font-size: 15px; }
+    .stop-person { font-size: 13px; color: var(--text-muted); }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <h1>Reparto Inteligente</h1>
-
-  <div class="config-box" id="apiKeySection">
-   <input type="password" id="apiKeyInput" placeholder="Pegar Gemini API Key aquí" onchange="saveApiKey()" />
+  <div class="header">
+    <h1>Reparto Pro</h1>
   </div>
 
-  <label class="upload-btn" id="uploadLabel">
-    📷 Sacar Foto a la Planilla
+  <div class="config-box" id="apiKeySection">
+    <input type="password" id="apiKeyInput" placeholder="Pegar Gemini API Key aquí" onchange="saveApiKey()" />
+  </div>
+
+  <label class="btn btn-primary" id="uploadLabel">
+    <svg viewBox="0 0 24 24"><path d="M4 4h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm8 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/></svg>
+    Escanear Planilla Completa
     <input type="file" accept="image/*" capture="environment" onchange="procesarFoto(event)" />
   </label>
 
-  <!-- Barra de progreso animada -->
-  <div id="progressWrapper" class="progress-wrapper">
-    <div id="progressText" class="progress-text">Leyendo planilla...</div>
-    <div class="progress-bar-bg">
-      <div id="progressBarFill" class="progress-bar-fill"></div>
+  <div id="progressWrapper" class="progress-bar-container">
+    <div id="progressLabel" class="progress-label">Iniciando lectura...</div>
+    <div class="progress-track">
+      <div id="progressFill" class="progress-fill"></div>
     </div>
   </div>
 
-  <!-- Panel de Estadísticas -->
-  <div id="statsSection" class="stats-grid" style="display: none;">
-    <div class="stat-box">
-      <div id="statTotal" class="stat-number" style="color: var(--accent);">0</div>
-      <div class="stat-label">TOTAL</div>
-    </div>
-    <div class="stat-box">
-      <div id="statDone" class="stat-number" style="color: var(--success);">0</div>
-      <div class="stat-label">ENTREGADOS</div>
-    </div>
-    <div class="stat-box">
-      <div id="statFailed" class="stat-number" style="color: var(--warning);">0</div>
-      <div class="stat-label">NO ENTREGADO</div>
-    </div>
-    <div class="stat-box">
-      <div id="statDiscarded" class="stat-number" style="color: var(--danger);">0</div>
-      <div class="stat-label">FUERA ZONA</div>
-    </div>
+  <!-- Resumen superior limpio -->
+  <div id="summaryStrip" class="summary-strip">
+    <div>Progreso: <strong id="sumProgress">0/0</strong></div>
+    <div>Cierre est.: <strong id="sumEta">--:--</strong></div>
   </div>
 
-  <div id="statusBadge" class="status-badge" style="display: none;"></div>
-
-  <!-- Botón de Ruta General Multi-Parada -->
-  <a id="btnAllMaps" class="action-btn btn-all-maps" target="_blank" style="display: none;">
-    🗺️ Abrir Ruta Completa en Maps
+  <a id="btnAllMaps" class="btn btn-maps" target="_blank" style="display: none;">
+    <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
+    Ruta General en Maps
   </a>
 
   <!-- Tarjeta Entrega Actual -->
-  <div id="currentDeliveryCard" class="card current-delivery" style="display: none;">
-    <div class="current-label">Próxima Parada</div>
-    <div class="pkg-number" id="curPkg">#--</div>
-    <div class="address" id="curAddress">--</div>
-    <div class="client-name" id="curName">--</div>
+  <div id="currentCard" class="card" style="display: none;">
+    <div class="delivery-badge">Próxima Parada</div>
+    <div class="pkg-title" id="curPkg">#--</div>
+    <div class="address-title" id="curAddress">--</div>
+    <div class="receiver-name" id="curName">--</div>
 
-    <a id="btnMaps" class="action-btn btn-maps" target="_blank">📍 Navegar a esta dirección</a>
-    <button class="action-btn btn-done" onclick="marcarEntregado()">✅ Entregado con Éxito</button>
-    <button class="action-btn btn-failed" onclick="marcarNoEntregado()">❌ No Entregado (Problema)</button>
+    <a id="btnMaps" class="btn btn-primary" target="_blank">
+      <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
+      Navegar con GPS
+    </a>
+    
+    <button class="btn btn-success" onclick="marcarEntregado()">
+      <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+      Entregado
+    </button>
+    
+    <button class="btn btn-outline-danger" onclick="marcarNoEntregado()">
+      <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+      No entregado / Problema
+    </button>
   </div>
 
-  <!-- Lista Siguientes Entregas -->
-  <div id="nextSection" class="card next-list" style="display: none;">
-    <h3>Siguientes entregas</h3>
+  <!-- Siguientes Paradas -->
+  <div id="nextSection" class="card" style="display: none;">
+    <div class="section-title">Siguientes entregas</div>
     <div id="queueList"></div>
   </div>
 
-  <!-- Reporte de No Entregados -->
-  <div id="failedSection" class="card failed-card" style="display: none;">
-    <h3 style="color: var(--warning); font-size: 16px; margin-bottom: 8px;">⚠️ Paquetes No Entregados</h3>
-    <div id="failedList" style="font-size: 14px;"></div>
-  </div>
-
-  <!-- Descartados Fuera de Zona -->
-  <div id="discardedSection" class="card discarded-card" style="display: none;">
-    <h3 style="color: var(--danger); font-size: 16px; margin-bottom: 8px;">🚫 Fuera de Zona (> 5 km)</h3>
-    <div id="discardedList" style="font-size: 14px;"></div>
+  <!-- Novedades: No entregados y Fuera de zona -->
+  <div id="issuesSection" class="card" style="display: none; border-color: rgba(255, 69, 58, 0.3);">
+    <div class="section-title" style="color: var(--danger);">Paquetes Aislados / Novedades</div>
+    <div id="issuesList" style="font-size: 14px; line-height: 1.5;"></div>
   </div>
 </div>
 
@@ -219,8 +232,7 @@
   let ruta = [];
   let currentIndex = 0;
   let entregadosCount = 0;
-  let noEntregados = [];
-  let descartados = [];
+  let novedades = [];
 
   function saveApiKey() {
     const val = document.getElementById('apiKeyInput').value.trim();
@@ -247,11 +259,11 @@
 
   function setProgress(percent, text) {
     const pWrapper = document.getElementById('progressWrapper');
-    const pFill = document.getElementById('progressBarFill');
-    const pText = document.getElementById('progressText');
+    const pFill = document.getElementById('progressFill');
+    const pLabel = document.getElementById('progressLabel');
     pWrapper.style.display = 'block';
     pFill.style.width = percent + '%';
-    pText.innerText = text;
+    pLabel.innerText = text;
   }
 
   function hablar(texto) {
@@ -269,28 +281,28 @@
 
     const apiKey = localStorage.getItem('gemini_api_key');
     if (!apiKey) {
-      alert("Por favor cargá tu API Key primero.");
+      alert("Por favor carga tu API Key primero.");
       return;
     }
 
     document.getElementById('uploadLabel').style.display = 'none';
-    setProgress(20, "📷 Leyendo datos de la planilla...");
+    setProgress(20, "Escaneando filas de la planilla...");
 
     try {
       const base64Image = await toBase64(file);
       const cleanedBase64 = base64Image.split(',')[1];
       const mimeType = file.type || 'image/jpeg';
 
-      setProgress(50, "🧠 Analizando direcciones y calculando sectores...");
+      setProgress(50, "Extrayendo todas las direcciones...");
 
-      const prompt = `Analiza esta planilla de logística y devuelve un arreglo JSON con las entregas.
-Cada elemento debe tener:
-- "paquete": número de paquete (string)
-- "remitente": nombre y apellido
-- "direccion": calle, altura y localidad
-- "fueraDeZona": booleano (true si la dirección está claramente aislada o a más de 5km del grupo principal).
+      const prompt = `Analiza detalladamente esta planilla de reparto y extrae ABSOLUTAMENTE TODOS los paquetes o filas listadas. No omitas ninguno.
+Devuelve un arreglo JSON válido donde cada elemento contenga:
+- "paquete": identificador o número del paquete (string)
+- "remitente": nombre y apellido de la persona
+- "direccion": calle, altura y localidad completa
+- "fueraDeZona": booleano (true si la dirección queda a más de 5 km o totalmente aislada del lote principal).
 
-Ordena los elementos válidos formando una secuencia lógica por proximidad y sectores.`;
+Ordena los paquetes válidos creando la secuencia de entrega más corta y lógica por calles y cercanía.`;
 
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
@@ -313,81 +325,81 @@ Ordena los elementos válidos formando una secuencia lógica por proximidad y se
         })
       });
 
-      setProgress(85, "📍 Optimizando el mejor recorrido...");
+      setProgress(85, "Organizando secuencia de paradas...");
 
       const data = await response.json();
-      if (data.error) throw new Error(data.error.message || "Error en la API de Google");
+      if (data.error) throw new Error(data.error.message || "Error al procesar");
 
       const rawText = data.candidates[0].content.parts[0].text;
       const entregas = JSON.parse(rawText);
 
-      setProgress(100, "✅ ¡Ruta lista!");
+      setProgress(100, "Ruta generada");
       setTimeout(() => {
         document.getElementById('progressWrapper').style.display = 'none';
         configurarRuta(entregas);
-      }, 500);
+      }, 400);
 
     } catch (err) {
-      alert("Detalle del error: " + err.message);
-      console.error(err);
+      alert("Error: " + err.message);
       document.getElementById('progressWrapper').style.display = 'none';
-      document.getElementById('uploadLabel').style.display = 'flex';
+      document.getElementById('uploadLabel').style.display = 'inline-flex';
     }
   }
 
   function configurarRuta(entregas) {
     ruta = entregas.filter(e => !e.fueraDeZona);
-    descartados = entregas.filter(e => e.fueraDeZona);
+    const descartados = entregas.filter(e => e.fueraDeZona);
     currentIndex = 0;
     entregadosCount = 0;
-    noEntregados = [];
+    novedades = descartados.map(d => ({ ...d, motivo: "Fuera de zona (>5km)" }));
 
-    // Generar URL para ruta completa (hasta 9 paradas permitidas por Google Maps URL)
     if (ruta.length > 0) {
       const addresses = ruta.slice(0, 9).map(r => encodeURIComponent(r.direccion));
       const allMapsUrl = `https://www.google.com/maps/dir/${addresses.join('/')}`;
       const btnAll = document.getElementById('btnAllMaps');
       btnAll.href = allMapsUrl;
-      btnAll.style.display = 'block';
+      btnAll.style.display = 'inline-flex';
     }
 
-    if (descartados.length > 0) {
-      const discList = document.getElementById('discardedList');
-      discList.innerHTML = descartados.map(d => `• <strong>Paquete #${d.paquete}</strong>: ${d.direccion} (${d.remitente})`).join('<br>');
-      document.getElementById('discardedSection').style.display = 'block';
-    }
-
-    actualizarEstadisticas();
+    renderNovedades();
     actualizarVista();
   }
 
-  function actualizarEstadisticas() {
-    document.getElementById('statsSection').style.display = 'grid';
-    document.getElementById('statTotal').innerText = ruta.length + descartados.length;
-    document.getElementById('statDone').innerText = entregadosCount;
-    document.getElementById('statFailed').innerText = noEntregados.length;
-    document.getElementById('statDiscarded').innerText = descartados.length;
-
-    const restantes = ruta.length - currentIndex;
-    const minutosTotales = restantes * 8;
-    const ahora = new Date();
-    const horaFin = new Date(ahora.getTime() + minutosTotales * 60000);
-    const horaTexto = horaFin.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-    const badge = document.getElementById('statusBadge');
-    badge.innerText = `📦 Quedan ${restantes} entregas • Est. finalización: ${horaTexto} hs`;
-    badge.style.display = restantes > 0 ? 'block' : 'none';
+  function renderNovedades() {
+    if (novedades.length > 0) {
+      const issuesList = document.getElementById('issuesList');
+      issuesList.innerHTML = novedades.map(n => `
+        <div style="margin-bottom: 8px;">
+          <strong>#${n.paquete}</strong> • ${n.direccion}<br>
+          <span style="color: var(--danger); font-size: 13px;">${n.motivo}</span>
+        </div>
+      `).join('');
+      document.getElementById('issuesSection').style.display = 'block';
+    }
   }
 
   function actualizarVista() {
-    if (currentIndex >= ruta.length) {
-      document.getElementById('currentDeliveryCard').innerHTML = '<div style="text-align:center; font-size:22px; font-weight:700; padding:10px;">🎉 ¡Jornada terminada! Todas las paradas fueron procesadas.</div>';
+    const total = ruta.length;
+    const restantes = total - currentIndex;
+
+    if (currentIndex >= total && total > 0) {
+      document.getElementById('currentCard').innerHTML = '<div style="text-align:center; font-size:20px; font-weight:700; padding:15px;">Jornada finalizada. Todas las paradas completadas.</div>';
       document.getElementById('nextSection').style.display = 'none';
-      document.getElementById('statusBadge').style.display = 'none';
+      document.getElementById('summaryStrip').style.display = 'none';
       document.getElementById('btnAllMaps').style.display = 'none';
-      hablar("Excelente trabajo, completaron todo el recorrido.");
+      hablar("Jornada completada. Muy buen trabajo.");
       return;
     }
+
+    // Actualiza la barra superior limpia
+    document.getElementById('summaryStrip').style.display = 'flex';
+    document.getElementById('sumProgress').innerText = `${entregadosCount}/${total}`;
+    
+    // Cálculo: 8 minutos promedio por paquete restante
+    const minutosTotales = restantes * 8;
+    const ahora = new Date();
+    const horaFin = new Date(ahora.getTime() + minutosTotales * 60000);
+    document.getElementById('sumEta').innerText = horaFin.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' hs';
 
     const cur = ruta[currentIndex];
     document.getElementById('curPkg').innerText = `#${cur.paquete}`;
@@ -396,17 +408,17 @@ Ordena los elementos válidos formando una secuencia lógica por proximidad y se
 
     const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(cur.direccion)}`;
     document.getElementById('btnMaps').href = mapsUrl;
-    document.getElementById('currentDeliveryCard').style.display = 'block';
+    document.getElementById('currentCard').style.display = 'block';
 
     const queueList = document.getElementById('queueList');
     const siguientes = ruta.slice(currentIndex + 1);
     if (siguientes.length > 0) {
       queueList.innerHTML = siguientes.map(s => `
-        <div class="item-row">
-          <div class="item-pkg">#${s.paquete}</div>
-          <div class="item-info">
-            <strong>${s.direccion}</strong>
-            <span>${s.remitente}</span>
+        <div class="stop-row">
+          <div class="stop-num">#${s.paquete}</div>
+          <div class="stop-info">
+            <div class="stop-addr">${s.direccion}</div>
+            <div class="stop-person">${s.remitente}</div>
           </div>
         </div>
       `).join('');
@@ -421,24 +433,17 @@ Ordena los elementos válidos formando una secuencia lógica por proximidad y se
   function marcarEntregado() {
     entregadosCount++;
     currentIndex++;
-    actualizarEstadisticas();
     actualizarVista();
   }
 
   function marcarNoEntregado() {
     const cur = ruta[currentIndex];
-    const motivo = prompt("Motivo por el cual no se entregó:\n1. Nadie en el domicilio\n2. Dirección incorrecta/no existe\n3. Rechazado\n(O escribe el motivo):", "Nadie en el domicilio");
+    const motivo = prompt("Motivo de la no entrega:\n1. Ausente / Nadie atiende\n2. Dirección incorrecta\n3. Rechazado", "Ausente / Nadie atiende");
     
     if (motivo !== null) {
-      noEntregados.push({ ...cur, motivo: motivo });
-
-      const failedSec = document.getElementById('failedSection');
-      const failedList = document.getElementById('failedList');
-      failedList.innerHTML = noEntregados.map(f => `• <strong>Paquete #${f.paquete}</strong>: ${f.direccion} <br><span style="color:var(--danger); font-size:12px;">↳ Motivo: ${f.motivo}</span>`).join('<br><br>');
-      failedSec.style.display = 'block';
-
+      novedades.push({ ...cur, motivo: motivo });
+      renderNovedades();
       currentIndex++;
-      actualizarEstadisticas();
       actualizarVista();
     }
   }
