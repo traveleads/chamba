@@ -22,11 +22,9 @@
     .container { max-width: 500px; margin: 0 auto; }
     h1 { font-size: 26px; font-weight: 700; margin-bottom: 12px; text-align: center; }
 
-    /* Configuración API Key */
     .config-box { background: var(--card-bg); padding: 14px; border-radius: 16px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
     .config-box input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #D1D1D6; font-size: 16px; outline: none; }
 
-    /* Tarjetas */
     .card {
       background: var(--card-bg);
       border-radius: 20px;
@@ -35,7 +33,6 @@
       box-shadow: 0 4px 14px rgba(0,0,0,0.06);
     }
 
-    /* Botón principal de escaneo */
     .upload-btn {
       display: flex;
       align-items: center;
@@ -53,23 +50,50 @@
     }
     input[type="file"] { display: none; }
 
-    /* Indicador de estado y motivación */
+    /* Barra de Progreso */
+    .progress-wrapper {
+      display: none;
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      text-align: center;
+    }
+    .progress-text { font-size: 15px; font-weight: 600; color: var(--accent); margin-bottom: 10px; }
+    .progress-bar-bg { width: 100%; height: 12px; background: #E5E5EA; border-radius: 6px; overflow: hidden; }
+    .progress-bar-fill { width: 0%; height: 100%; background: var(--accent); border-radius: 6px; transition: width 0.3s ease; }
+
+    /* Resumen y Estadísticas */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .stat-box {
+      background: var(--card-bg);
+      padding: 12px 6px;
+      border-radius: 14px;
+      text-align: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    }
+    .stat-number { font-size: 20px; font-weight: 800; }
+    .stat-label { font-size: 11px; color: var(--subtext); font-weight: 600; margin-top: 2px; }
+
     .status-badge {
       background: #E5F0FF;
       color: var(--accent);
       padding: 10px 14px;
       border-radius: 12px;
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 600;
       text-align: center;
       margin-bottom: 16px;
     }
 
-    /* Foco actual: Modo Reparto */
-    .current-delivery {
-      border: 3px solid var(--accent);
-      background: #FFFFFF;
-    }
+    /* Tarjeta foco actual */
+    .current-delivery { border: 3px solid var(--accent); background: #FFFFFF; }
     .current-label { font-size: 14px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.5px; }
     .pkg-number { font-size: 42px; font-weight: 800; color: var(--accent); margin: 6px 0; }
     .address { font-size: 22px; font-weight: 700; line-height: 1.2; margin-bottom: 6px; }
@@ -82,17 +106,19 @@
       padding: 16px;
       border: none;
       border-radius: 14px;
-      font-size: 18px;
+      font-size: 17px;
       font-weight: 600;
       cursor: pointer;
       margin-bottom: 10px;
       text-align: center;
       text-decoration: none;
     }
-    .btn-maps { background-color: #007AFF; color: white; }
+    .btn-maps { background-color: var(--accent); color: white; }
     .btn-done { background-color: var(--success); color: white; }
+    .btn-failed { background-color: #FFECEB; color: var(--danger); border: 1px solid var(--danger); }
+    .btn-all-maps { background-color: #5856D6; color: white; }
 
-    /* Lista siguiente */
+    /* Listas */
     .next-list h3 { font-size: 18px; margin-bottom: 10px; color: var(--subtext); }
     .item-row {
       display: flex;
@@ -105,9 +131,8 @@
     .item-info { flex: 1; font-size: 15px; }
     .item-info span { display: block; color: var(--subtext); font-size: 13px; }
 
-    /* Descartados */
+    .failed-card { border-left: 5px solid var(--warning); }
     .discarded-card { border-left: 5px solid var(--danger); }
-    .loading-spinner { text-align: center; font-size: 18px; font-weight: 600; padding: 20px; display: none; }
   </style>
 </head>
 <body>
@@ -124,27 +149,68 @@
     <input type="file" accept="image/*" capture="environment" onchange="procesarFoto(event)" />
   </label>
 
-  <div id="loading" class="loading-spinner">⏳ Analizando hoja y ordenando ruta...</div>
+  <!-- Barra de progreso animada -->
+  <div id="progressWrapper" class="progress-wrapper">
+    <div id="progressText" class="progress-text">Leyendo planilla...</div>
+    <div class="progress-bar-bg">
+      <div id="progressBarFill" class="progress-bar-fill"></div>
+    </div>
+  </div>
+
+  <!-- Panel de Estadísticas -->
+  <div id="statsSection" class="stats-grid" style="display: none;">
+    <div class="stat-box">
+      <div id="statTotal" class="stat-number" style="color: var(--accent);">0</div>
+      <div class="stat-label">TOTAL</div>
+    </div>
+    <div class="stat-box">
+      <div id="statDone" class="stat-number" style="color: var(--success);">0</div>
+      <div class="stat-label">ENTREGADOS</div>
+    </div>
+    <div class="stat-box">
+      <div id="statFailed" class="stat-number" style="color: var(--warning);">0</div>
+      <div class="stat-label">NO ENTREGADO</div>
+    </div>
+    <div class="stat-box">
+      <div id="statDiscarded" class="stat-number" style="color: var(--danger);">0</div>
+      <div class="stat-label">FUERA ZONA</div>
+    </div>
+  </div>
 
   <div id="statusBadge" class="status-badge" style="display: none;"></div>
 
+  <!-- Botón de Ruta General Multi-Parada -->
+  <a id="btnAllMaps" class="action-btn btn-all-maps" target="_blank" style="display: none;">
+    🗺️ Abrir Ruta Completa en Maps
+  </a>
+
+  <!-- Tarjeta Entrega Actual -->
   <div id="currentDeliveryCard" class="card current-delivery" style="display: none;">
     <div class="current-label">Próxima Parada</div>
     <div class="pkg-number" id="curPkg">#--</div>
     <div class="address" id="curAddress">--</div>
     <div class="client-name" id="curName">--</div>
 
-    <a id="btnMaps" class="action-btn btn-maps" target="_blank">🗺️ Navegar en Google Maps</a>
-    <button class="action-btn btn-done" onclick="marcarEntregado()">✅ Marcar como Entregado</button>
+    <a id="btnMaps" class="action-btn btn-maps" target="_blank">📍 Navegar a esta dirección</a>
+    <button class="action-btn btn-done" onclick="marcarEntregado()">✅ Entregado con Éxito</button>
+    <button class="action-btn btn-failed" onclick="marcarNoEntregado()">❌ No Entregado (Problema)</button>
   </div>
 
+  <!-- Lista Siguientes Entregas -->
   <div id="nextSection" class="card next-list" style="display: none;">
     <h3>Siguientes entregas</h3>
     <div id="queueList"></div>
   </div>
 
+  <!-- Reporte de No Entregados -->
+  <div id="failedSection" class="card failed-card" style="display: none;">
+    <h3 style="color: var(--warning); font-size: 16px; margin-bottom: 8px;">⚠️ Paquetes No Entregados</h3>
+    <div id="failedList" style="font-size: 14px;"></div>
+  </div>
+
+  <!-- Descartados Fuera de Zona -->
   <div id="discardedSection" class="card discarded-card" style="display: none;">
-    <h3 style="color: var(--danger); font-size: 16px; margin-bottom: 8px;">⚠️ Fuera de Zona (> 5 km)</h3>
+    <h3 style="color: var(--danger); font-size: 16px; margin-bottom: 8px;">🚫 Fuera de Zona (> 5 km)</h3>
     <div id="discardedList" style="font-size: 14px;"></div>
   </div>
 </div>
@@ -152,6 +218,9 @@
 <script>
   let ruta = [];
   let currentIndex = 0;
+  let entregadosCount = 0;
+  let noEntregados = [];
+  let descartados = [];
 
   function saveApiKey() {
     const val = document.getElementById('apiKeyInput').value.trim();
@@ -176,6 +245,15 @@
     }
   };
 
+  function setProgress(percent, text) {
+    const pWrapper = document.getElementById('progressWrapper');
+    const pFill = document.getElementById('progressBarFill');
+    const pText = document.getElementById('progressText');
+    pWrapper.style.display = 'block';
+    pFill.style.width = percent + '%';
+    pText.innerText = text;
+  }
+
   function hablar(texto) {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
@@ -195,15 +273,15 @@
       return;
     }
 
-    const loadingElem = document.getElementById('loading');
-    loadingElem.style.display = 'block';
-    loadingElem.innerText = "⏳ Analizando hoja y ordenando ruta...";
     document.getElementById('uploadLabel').style.display = 'none';
+    setProgress(20, "📷 Leyendo datos de la planilla...");
 
     try {
       const base64Image = await toBase64(file);
       const cleanedBase64 = base64Image.split(',')[1];
       const mimeType = file.type || 'image/jpeg';
+
+      setProgress(50, "🧠 Analizando direcciones y calculando sectores...");
 
       const prompt = `Analiza esta planilla de logística y devuelve un arreglo JSON con las entregas.
 Cada elemento debe tener:
@@ -235,55 +313,79 @@ Ordena los elementos válidos formando una secuencia lógica por proximidad y se
         })
       });
 
-      const data = await response.json();
+      setProgress(85, "📍 Optimizando el mejor recorrido...");
 
-      if (data.error) {
-        throw new Error(data.error.message || "Error en la API de Google");
-      }
+      const data = await response.json();
+      if (data.error) throw new Error(data.error.message || "Error en la API de Google");
 
       const rawText = data.candidates[0].content.parts[0].text;
       const entregas = JSON.parse(rawText);
 
-      configurarRuta(entregas);
+      setProgress(100, "✅ ¡Ruta lista!");
+      setTimeout(() => {
+        document.getElementById('progressWrapper').style.display = 'none';
+        configurarRuta(entregas);
+      }, 500);
+
     } catch (err) {
       alert("Detalle del error: " + err.message);
       console.error(err);
+      document.getElementById('progressWrapper').style.display = 'none';
       document.getElementById('uploadLabel').style.display = 'flex';
-    } finally {
-      loadingElem.style.display = 'none';
     }
   }
 
   function configurarRuta(entregas) {
-    const validos = entregas.filter(e => !e.fueraDeZona);
-    const descartados = entregas.filter(e => e.fueraDeZona);
-
-    ruta = validos;
+    ruta = entregas.filter(e => !e.fueraDeZona);
+    descartados = entregas.filter(e => e.fueraDeZona);
     currentIndex = 0;
+    entregadosCount = 0;
+    noEntregados = [];
 
-    const minutosTotales = validos.length * 8;
+    // Generar URL para ruta completa (hasta 9 paradas permitidas por Google Maps URL)
+    if (ruta.length > 0) {
+      const addresses = ruta.slice(0, 9).map(r => encodeURIComponent(r.direccion));
+      const allMapsUrl = `https://www.google.com/maps/dir/${addresses.join('/')}`;
+      const btnAll = document.getElementById('btnAllMaps');
+      btnAll.href = allMapsUrl;
+      btnAll.style.display = 'block';
+    }
+
+    if (descartados.length > 0) {
+      const discList = document.getElementById('discardedList');
+      discList.innerHTML = descartados.map(d => `• <strong>Paquete #${d.paquete}</strong>: ${d.direccion} (${d.remitente})`).join('<br>');
+      document.getElementById('discardedSection').style.display = 'block';
+    }
+
+    actualizarEstadisticas();
+    actualizarVista();
+  }
+
+  function actualizarEstadisticas() {
+    document.getElementById('statsSection').style.display = 'grid';
+    document.getElementById('statTotal').innerText = ruta.length + descartados.length;
+    document.getElementById('statDone').innerText = entregadosCount;
+    document.getElementById('statFailed').innerText = noEntregados.length;
+    document.getElementById('statDiscarded').innerText = descartados.length;
+
+    const restantes = ruta.length - currentIndex;
+    const minutosTotales = restantes * 8;
     const ahora = new Date();
     const horaFin = new Date(ahora.getTime() + minutosTotales * 60000);
     const horaTexto = horaFin.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     const badge = document.getElementById('statusBadge');
-    badge.innerText = `📦 ${validos.length} entregas • Finalización est.: ${horaTexto} hs`;
-    badge.style.display = 'block';
-
-    if (descartados.length > 0) {
-      const discList = document.getElementById('discardedList');
-      discList.innerHTML = descartados.map(d => `• Paquete #${d.paquete}: ${d.direccion} (${d.remitente})`).join('<br>');
-      document.getElementById('discardedSection').style.display = 'block';
-    }
-
-    actualizarVista();
+    badge.innerText = `📦 Quedan ${restantes} entregas • Est. finalización: ${horaTexto} hs`;
+    badge.style.display = restantes > 0 ? 'block' : 'none';
   }
 
   function actualizarVista() {
     if (currentIndex >= ruta.length) {
-      document.getElementById('currentDeliveryCard').innerHTML = '<div style="text-align:center; font-size:24px; font-weight:700;">🎉 ¡Ruta completada!</div>';
+      document.getElementById('currentDeliveryCard').innerHTML = '<div style="text-align:center; font-size:22px; font-weight:700; padding:10px;">🎉 ¡Jornada terminada! Todas las paradas fueron procesadas.</div>';
       document.getElementById('nextSection').style.display = 'none';
-      hablar("Excelente trabajo, completaron todas las entregas.");
+      document.getElementById('statusBadge').style.display = 'none';
+      document.getElementById('btnAllMaps').style.display = 'none';
+      hablar("Excelente trabajo, completaron todo el recorrido.");
       return;
     }
 
@@ -294,7 +396,6 @@ Ordena los elementos válidos formando una secuencia lógica por proximidad y se
 
     const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(cur.direccion)}`;
     document.getElementById('btnMaps').href = mapsUrl;
-
     document.getElementById('currentDeliveryCard').style.display = 'block';
 
     const queueList = document.getElementById('queueList');
@@ -314,12 +415,32 @@ Ordena los elementos válidos formando una secuencia lógica por proximidad y se
       document.getElementById('nextSection').style.display = 'none';
     }
 
-    hablar(`Próxima entrega, paquete ${cur.paquete}. En ${cur.direccion}`);
+    hablar(`Próxima parada, paquete ${cur.paquete}. En ${cur.direccion}`);
   }
 
   function marcarEntregado() {
+    entregadosCount++;
     currentIndex++;
+    actualizarEstadisticas();
     actualizarVista();
+  }
+
+  function marcarNoEntregado() {
+    const cur = ruta[currentIndex];
+    const motivo = prompt("Motivo por el cual no se entregó:\n1. Nadie en el domicilio\n2. Dirección incorrecta/no existe\n3. Rechazado\n(O escribe el motivo):", "Nadie en el domicilio");
+    
+    if (motivo !== null) {
+      noEntregados.push({ ...cur, motivo: motivo });
+
+      const failedSec = document.getElementById('failedSection');
+      const failedList = document.getElementById('failedList');
+      failedList.innerHTML = noEntregados.map(f => `• <strong>Paquete #${f.paquete}</strong>: ${f.direccion} <br><span style="color:var(--danger); font-size:12px;">↳ Motivo: ${f.motivo}</span>`).join('<br><br>');
+      failedSec.style.display = 'block';
+
+      currentIndex++;
+      actualizarEstadisticas();
+      actualizarVista();
+    }
   }
 
   function toBase64(file) {
