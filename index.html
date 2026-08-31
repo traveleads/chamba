@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>Reparto Pro</title>
 
-  <!-- Metadatos para vista previa en WhatsApp y redes -->
   <meta property="og:title" content="Reparto Pro - Asistente de Logística" />
   <meta property="og:description" content="Organizador inteligente de rutas de reparto optimizadas por cercanía y sectores." />
   <meta property="og:image" content="https://traveleads.github.io/chamba/logo.png" />
@@ -78,7 +77,6 @@
     .btn-reset-header:active { background: rgba(255, 69, 58, 0.1); color: var(--danger); }
     .btn-reset-header svg { width: 14px; height: 14px; fill: currentColor; }
 
-    /* Tarjeta de Bienvenida */
     .welcome-card {
       background: var(--card-bg);
       border-radius: 20px;
@@ -157,6 +155,7 @@
     .btn svg { width: 22px; height: 22px; fill: currentColor; }
     input[type="file"] { display: none; }
 
+    /* Barra de Progreso y Animación Pulsante */
     .progress-box {
       display: none;
       background: var(--card-bg);
@@ -180,9 +179,19 @@
       transition: color 0.3s ease;
     }
     .step-item:last-child { margin-bottom: 0; }
-    .step-item.active { color: var(--accent); font-weight: 600; }
+    .step-item.active {
+      color: var(--accent);
+      font-weight: 600;
+      animation: pulseGlow 1.2s infinite ease-in-out;
+    }
     .step-item.done { color: var(--success); font-weight: 600; }
     .step-icon { width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; }
+
+    @keyframes pulseGlow {
+      0% { opacity: 0.6; transform: translateX(0px); }
+      50% { opacity: 1; transform: translateX(3px); }
+      100% { opacity: 0.6; transform: translateX(0px); }
+    }
 
     .scan-status {
       display: none;
@@ -255,9 +264,9 @@
 <div class="container">
   <div class="header">
     <h1>Reparto Pro</h1>
-    <button id="btnResetAll" class="btn-reset-header" onclick="reiniciarJornadaManual()">
+    <button id="btnResetAll" class="btn-reset-header" onclick="gestionarNuevoEscaneo()">
       <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
-      Nuevo escaneo
+      Opciones de escaneo
     </button>
   </div>
 
@@ -265,11 +274,11 @@
     <input type="password" id="apiKeyInput" placeholder="Pegar Gemini API Key aquí" onchange="saveApiKey()" />
   </div>
 
-  <!-- Bienvenida inicial -->
+  <!-- Bienvenida personalizada -->
   <div class="welcome-card" id="welcomeSection">
     <img class="welcome-logo" src="https://traveleads.github.io/chamba/logo.png" alt="Logo Reparto Pro" />
     <div class="welcome-title" id="welcomeGreeting">¡Buenos días! 👋</div>
-    <div class="welcome-subtitle">Escanéen las planillas del día para armar la ruta más rápida y ordenada.</div>
+    <div class="welcome-subtitle">Escaneá las direcciones de hoy para armar la ruta más rápida y ordenada.</div>
   </div>
 
   <div id="scanControls">
@@ -374,6 +383,7 @@
   let historialAcciones = [];
   let novedades = [];
   let fotosAcumuladas = [];
+  let modoAnexo = false; // Define si sumamos hojas a la ruta existente
 
   function saveApiKey() {
     const val = document.getElementById('apiKeyInput').value.trim();
@@ -432,10 +442,24 @@
     localStorage.removeItem('reparto_novedades');
   }
 
-  function reiniciarJornadaManual() {
-    if (confirm("¿Querés reiniciar la jornada y escanear fotos nuevas?")) {
-      limpiarDatosLocales();
-      location.reload();
+  function gestionarNuevoEscaneo() {
+    const opcion = prompt("¿Qué deseas hacer?\n1. Agregar más hojas a la ruta actual\n2. Empezar jornada desde cero (borrar todo)\n(Escribe 1 o 2):", "1");
+    
+    if (opcion === "1") {
+      modoAnexo = true;
+      fotosAcumuladas = [];
+      document.getElementById('scanControls').style.display = 'block';
+      document.getElementById('scanStatus').style.display = 'none';
+      document.getElementById('btnPhotoText').innerText = "📷 Tomar Foto a la Nueva Hoja";
+      document.getElementById('addPhotoBtn').classList.remove('btn-secondary');
+      document.getElementById('addPhotoBtn').classList.add('btn-primary');
+      document.getElementById('btnProcessAll').style.display = 'none';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (opcion === "2") {
+      if (confirm("¿Seguro que quieres borrar la jornada completa?")) {
+        limpiarDatosLocales();
+        location.reload();
+      }
     }
   }
 
@@ -467,7 +491,7 @@
           btnAll.style.display = 'inline-flex';
 
           renderNovedades();
-          actualizarVista();
+          actualizarVista(false);
         }
       } catch (e) {
         console.warn("Error recuperando estado:", e);
@@ -555,6 +579,9 @@
     const file = event.target.files[0];
     if (!file) return;
 
+    // Dispara solicitud de GPS temprana si no estaba activo
+    obtenerUbicacionActual();
+
     const base64DataUrl = await comprimirImagen(file);
     const cleanedBase64 = base64DataUrl.split(',')[1];
 
@@ -583,7 +610,7 @@
 
     document.getElementById('welcomeSection').style.display = 'none';
     document.getElementById('scanControls').style.display = 'none';
-    updateStep(1, 15, "Obteniendo punto de partida GPS...");
+    updateStep(1, 15, "Obteniendo ubicación GPS...");
 
     const coords = await obtenerUbicacionActual();
     const gpsContext = coords 
@@ -626,9 +653,9 @@ Estructura de salida JSON (arreglo de objetos):
       let rawText = null;
       let lastError = null;
 
-      setTimeout(() => updateStep(2, 50, "Extrayendo domicilios y agrupando por barrio..."), 800);
-      setTimeout(() => updateStep(3, 75, "Conectando zonas por barrido continuo..."), 1800);
-      setTimeout(() => updateStep(4, 90, "Finalizando trazado óptimo..."), 2800);
+      setTimeout(() => updateStep(2, 50, "Extrayendo domicilios y agrupando por barrio..."), 700);
+      setTimeout(() => updateStep(3, 75, "Conectando zonas por barrido continuo..."), 1500);
+      setTimeout(() => updateStep(4, 90, "¡Buena jornada! Trazando la mejor ruta..."), 2400);
 
       for (const model of modelsToTry) {
         try {
@@ -651,7 +678,7 @@ Estructura de salida JSON (arreglo de objetos):
       if (!rawText) throw lastError || new Error("No se pudo procesar el lote.");
 
       const entregas = JSON.parse(rawText);
-      updateStep(4, 100, "¡Ruta consolidada con éxito!");
+      updateStep(4, 100, "¡Buena jornada! Ruta lista.");
 
       fotosAcumuladas = [];
 
@@ -659,7 +686,7 @@ Estructura de salida JSON (arreglo de objetos):
         document.getElementById('progressBox').style.display = 'none';
         document.getElementById('btnResetAll').style.display = 'inline-flex';
         configurarRuta(entregas);
-      }, 500);
+      }, 600);
 
     } catch (err) {
       alert("Aviso: " + err.message);
@@ -668,11 +695,23 @@ Estructura de salida JSON (arreglo de objetos):
     }
   }
 
-  function configurarRuta(entregas) {
+  function configurarRuta(entregasNuevas) {
+    // Si estamos anexando hojas a una ruta existente
+    let entregasConsolidadas = [];
+    if (modoAnexo && ruta.length > 0) {
+      const yaEntregados = ruta.slice(0, currentIndex);
+      const pendientesPrevios = ruta.slice(currentIndex);
+      entregasConsolidadas = [...yaEntregados, ...pendientesPrevios, ...entregasNuevas];
+      modoAnexo = false;
+    } else {
+      entregasConsolidadas = entregasNuevas;
+      currentIndex = 0;
+      historialAcciones = [];
+    }
+
     const vistos = new Set();
     const unicos = [];
-    for (const e of entregas) {
-      // Limpia cualquier numeral previo que el modelo haya agregado
+    for (const e of entregasConsolidadas) {
       e.paquete = String(e.paquete).replace(/^#+/, '').trim();
       const key = (e.paquete + '|' + e.direccion).toLowerCase().trim();
       if (!vistos.has(key)) {
@@ -683,8 +722,6 @@ Estructura de salida JSON (arreglo de objetos):
 
     ruta = unicos.filter(e => !e.fueraDeZona);
     const descartados = unicos.filter(e => e.fueraDeZona);
-    currentIndex = 0;
-    historialAcciones = [];
     novedades = descartados.map(d => ({ ...d, motivo: "Fuera de zona (>5km)" }));
 
     if (ruta.length > 0) {
@@ -697,7 +734,7 @@ Estructura de salida JSON (arreglo de objetos):
 
     guardarEstado();
     renderNovedades();
-    actualizarVista();
+    actualizarVista(true); // true = cantar primera parada por voz
   }
 
   function renderNovedades() {
@@ -717,7 +754,7 @@ Estructura de salida JSON (arreglo de objetos):
     }
   }
 
-  function actualizarVista() {
+  function actualizarVista(cantarPorVoz = true) {
     const total = ruta.length;
     const restantes = total - currentIndex;
     const entregadosCount = historialAcciones.filter(h => h.tipo === 'entregado').length;
@@ -742,7 +779,6 @@ Estructura de salida JSON (arreglo de objetos):
     document.getElementById('sumEta').innerText = horaFin.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' hs';
 
     const cur = ruta[currentIndex];
-    // Asegura exactamente un solo signo numeral
     const cleanPkgNum = String(cur.paquete).replace(/^#+/, '');
     document.getElementById('curPkg').innerText = `#${cleanPkgNum}`;
     document.getElementById('curAddress').innerText = cur.direccion;
@@ -771,14 +807,17 @@ Estructura de salida JSON (arreglo de objetos):
       document.getElementById('nextSection').style.display = 'none';
     }
 
-    hablar(`Próxima parada, número ${cleanPkgNum}. En ${cur.direccion}`);
+    // Lee la parada actual (tanto la primera como las siguientes)
+    if (cantarPorVoz) {
+      hablar(`Próxima parada, número ${cleanPkgNum}. En ${cur.direccion}`);
+    }
   }
 
   function marcarEntregado() {
     historialAcciones.push({ tipo: 'entregado', index: currentIndex });
     currentIndex++;
     guardarEstado();
-    actualizarVista();
+    actualizarVista(true);
   }
 
   function marcarNoEntregado() {
@@ -791,7 +830,7 @@ Estructura de salida JSON (arreglo de objetos):
       renderNovedades();
       currentIndex++;
       guardarEstado();
-      actualizarVista();
+      actualizarVista(true);
     }
   }
 
@@ -808,7 +847,7 @@ Estructura de salida JSON (arreglo de objetos):
     }
 
     guardarEstado();
-    actualizarVista();
+    actualizarVista(true);
   }
 </script>
 </body>
