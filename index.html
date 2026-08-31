@@ -107,6 +107,8 @@
       margin-bottom: 16px;
       border: 1px solid var(--border-subtle);
       box-shadow: var(--card-shadow);
+      position: relative;
+      overflow: hidden;
     }
 
     .card-current {
@@ -222,19 +224,35 @@
       margin-bottom: 12px;
     }
 
-    .summary-strip {
+    /* Tarjeta de Resumen con Barra de Progreso Sutil */
+    .summary-card {
       display: none;
-      align-items: center;
-      justify-content: space-between;
+      position: relative;
       background: var(--card-bg);
-      padding: 12px 18px;
-      border-radius: 14px;
+      border-radius: 16px;
       margin-bottom: 16px;
       border: 1px solid var(--border-subtle);
+      box-shadow: var(--card-shadow);
+      overflow: hidden;
+    }
+    .summary-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
       font-size: 14px;
       font-weight: 500;
     }
-    .summary-strip strong { color: var(--accent); font-weight: 700; }
+    .summary-content strong { color: var(--accent); font-weight: 700; }
+    .live-progress-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 4px;
+      background: var(--success);
+      width: 0%;
+      transition: width 0.4s ease;
+    }
 
     .delivery-badge {
       display: inline-block;
@@ -340,9 +358,13 @@
     <div class="interim-summary" id="interimSummary"></div>
   </div>
 
-  <div id="summaryStrip" class="summary-strip">
-    <div>Progreso: <strong id="sumProgress">0/0</strong></div>
-    <div>Cierre est.: <strong id="sumEta">--:--</strong></div>
+  <!-- Resumen de progreso con barra sutil integrada -->
+  <div id="summaryCard" class="summary-card">
+    <div class="summary-content">
+      <div>Progreso: <strong id="sumProgress">0/0</strong></div>
+      <div>Cierre est.: <strong id="sumEta">--:--</strong></div>
+    </div>
+    <div id="liveProgressBar" class="live-progress-bar"></div>
   </div>
 
   <a id="btnAllMaps" class="btn btn-maps" target="_blank" style="display: none;">
@@ -417,6 +439,7 @@
     verificarLimpiezaDiaria();
     ajustarSaludo();
     cargarVoces();
+    solicitarPermisoNotificaciones();
 
     if ('speechSynthesis' in window) {
       window.speechSynthesis.onvoiceschanged = cargarVoces;
@@ -437,6 +460,12 @@
 
     recuperarEstadoDelDia();
   };
+
+  function solicitarPermisoNotificaciones() {
+    if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
+      Notification.requestPermission();
+    }
+  }
 
   function cargarVoces() {
     if ('speechSynthesis' in window) {
@@ -552,31 +581,26 @@
     }
   }
 
-  // Voz amable, pausada y femenina
   function hablar(texto) {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(texto);
       utterance.lang = 'es-AR';
-      utterance.rate = 0.95;  // Velocidad calmada
-      utterance.pitch = 1.05; // Tono amable
+      utterance.rate = 0.92; // Ritmo cómodo y comprensible
+      utterance.pitch = 1.0; // Tono natural
 
       if (cachedVoices.length === 0) {
         cachedVoices = window.speechSynthesis.getVoices();
       }
 
-      // Prioriza voces femeninas en español
-      const vozFemenina = cachedVoices.find(v => 
+      // Prioriza voces de calidad superior
+      const mejorVoz = cachedVoices.find(v => 
         (v.lang.includes('es') || v.lang.includes('ES')) &&
-        (v.name.includes('Paulina') || v.name.includes('Monica') || v.name.includes('Mónica') || 
-         v.name.includes('Helena') || v.name.includes('Lucia') || v.name.includes('Lucía') ||
-         v.name.includes('Google español') || v.name.toLowerCase().includes('female'))
+        (v.name.includes('Natural') || v.name.includes('Neural') || v.name.includes('Google') || 
+         v.name.includes('Paulina') || v.name.includes('Mónica') || v.name.includes('Helena'))
       ) || cachedVoices.find(v => v.lang.startsWith('es'));
 
-      if (vozFemenina) {
-        utterance.voice = vozFemenina;
-      }
-
+      if (mejorVoz) utterance.voice = mejorVoz;
       window.speechSynthesis.speak(utterance);
     }
   }
@@ -758,7 +782,7 @@ Estructura de salida JSON (arreglo de objetos):
       setTimeout(() => {
         document.getElementById('progressBox').style.display = 'none';
         document.getElementById('btnOptionsDots').style.display = 'inline-flex';
-        configurarRuta(entregas);
+        configurarRuta(entregas, totalEncontrados, localidadesDetectadas);
       }, 900);
 
     } catch (err) {
@@ -768,7 +792,7 @@ Estructura de salida JSON (arreglo de objetos):
     }
   }
 
-  function configurarRuta(entregasNuevas) {
+  function configurarRuta(entregasNuevas, totalStats = null, zonasStats = null) {
     let entregasConsolidadas = [];
     if (modoAnexo && ruta.length > 0) {
       const yaEntregados = ruta.slice(0, currentIndex);
@@ -806,7 +830,18 @@ Estructura de salida JSON (arreglo de objetos):
 
     guardarEstado();
     renderNovedades();
-    actualizarVista(true);
+    actualizarVista(false);
+
+    // Saludo de apertura con resumen y primer paquete
+    if (ruta.length > 0) {
+      const primerPaquete = parseInt(ruta[0].paquete, 10) || ruta[0].paquete;
+      const totalRepartos = totalStats || ruta.length;
+      const cantZonas = zonasStats || 1;
+      
+      setTimeout(() => {
+        hablar(`Buenos días. Hoy tenemos ${totalRepartos} repartos en ${cantZonas} distritos. El primero es el paquete número ${primerPaquete} en ${ruta[0].direccion}.`);
+      }, 400);
+    }
   }
 
   function renderNovedades() {
@@ -836,15 +871,19 @@ Estructura de salida JSON (arreglo de objetos):
     if (currentIndex >= total && total > 0) {
       document.getElementById('currentCard').innerHTML = '<div style="text-align:center; font-size:20px; font-weight:700; padding:15px;">Jornada finalizada. Todas las paradas completadas.</div>';
       document.getElementById('nextSection').style.display = 'none';
-      document.getElementById('summaryStrip').style.display = 'none';
+      document.getElementById('summaryCard').style.display = 'none';
       document.getElementById('btnAllMaps').style.display = 'none';
       hablar("Jornada completada. Muy buen trabajo.");
       return;
     }
 
-    document.getElementById('summaryStrip').style.display = 'flex';
+    // Actualiza resumen y barra de progreso sutil
+    document.getElementById('summaryCard').style.display = 'block';
     document.getElementById('sumProgress').innerText = `${entregadosCount}/${total}`;
     
+    const porcentajeProgreso = total > 0 ? (entregadosCount / total) * 100 : 0;
+    document.getElementById('liveProgressBar').style.width = porcentajeProgreso + '%';
+
     const minutosTotales = restantes * 8;
     const ahora = new Date();
     const horaFin = new Date(ahora.getTime() + minutosTotales * 60000);
@@ -880,7 +919,6 @@ Estructura de salida JSON (arreglo de objetos):
       document.getElementById('nextSection').style.display = 'none';
     }
 
-    // El audio pronuncia "paquete número X" de forma natural (limpiando ceros a la izquierda)
     if (cantarPorVoz) {
       const numeroHablado = parseInt(cleanPkgNum, 10) || cleanPkgNum;
       setTimeout(() => {
