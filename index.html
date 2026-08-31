@@ -153,29 +153,29 @@
   let ruta = [];
   let currentIndex = 0;
 
-  // Cargar API Key guardada
-  window.onload = () => {
-  const savedKey = localStorage.getItem('gemini_api_key');
-  if (savedKey) {
-    document.getElementById('apiKeyInput').value = savedKey;
-    document.getElementById('apiKeySection').style.display = 'none'; // Se oculta sola
+  // Lee la clave del link una sola vez y la guarda localmente
+window.onload = () => {
+  const hashParams = new URLSearchParams(window.location.hash.substring(1));
+  const keyFromUrl = hashParams.get('key');
+
+  if (keyFromUrl) {
+    localStorage.setItem('gemini_api_key', keyFromUrl);
+    // Borra la clave de la barra de navegación para que nadie la vea
+    history.replaceState(null, "", window.location.pathname);
+  }
+
+  // Oculta la configuración si ya está guardada
+  if (localStorage.getItem('gemini_api_key')) {
+    const configBox = document.getElementById('apiKeySection');
+    if (configBox) configBox.style.display = 'none';
   }
 };
-
-function saveApiKey() {
-  const key = document.getElementById('apiKeyInput').value.trim();
-  if (key) {
-    localStorage.setItem('gemini_api_key', key);
-    document.getElementById('apiKeySection').style.display = 'none';
-    alert("¡Clave guardada con éxito!");
-  }
-}
 
   async function procesarFoto(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    const apiKey = document.getElementById('apiKeyInput').value.trim();
+    const apiKey = localStorage.getItem('gemini_api_key');
     if (!apiKey) {
       alert("Por favor cargá tu API Key primero.");
       return;
