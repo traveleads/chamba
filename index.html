@@ -169,7 +169,7 @@
     }
     .progress-header { display: flex; justify-content: space-between; font-size: 15px; font-weight: 700; color: var(--accent); margin-bottom: 10px; }
     .progress-track { width: 100%; height: 8px; background: var(--border-subtle); border-radius: 4px; overflow: hidden; margin-bottom: 18px; }
-    .progress-fill { width: 0%; height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.4s ease; }
+    .progress-fill { width: 0%; height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.3s ease; }
     
     .step-item {
       display: flex;
@@ -311,7 +311,7 @@
 
     <button class="btn btn-success" id="btnProcessAll" style="display: none;" onclick="procesarTodasLasHojas()">
       <svg viewBox="0 0 24 24"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
-      Armar Ruta Óptima
+      Armar la ruta de hoy
     </button>
   </div>
 
@@ -326,7 +326,7 @@
     
     <div class="step-item" id="step1">
       <span class="step-icon" id="iconStep1">○</span>
-      <span>Extrayendo direcciones de las fotos...</span>
+      <span>Extrayendo direcciones y localidades...</span>
     </div>
     <div class="step-item" id="step2">
       <span class="step-icon" id="iconStep2">○</span>
@@ -641,20 +641,28 @@
     
     for (const e of entregas) {
       const cleanPkg = String(e.paquete || '').replace(/^#+/, '').trim();
-      const addr = String(e.direccion || '').trim();
-      const key = (cleanPkg + '|' + addr).toLowerCase();
-      if (!vistos.has(key) && addr.length > 2) {
+      const calle = String(e.calle || e.direccion || '').trim();
+      const loc = String(e.localidad || '').trim();
+
+      // Dirección consolidada completa
+      const fullAddress = loc && !calle.toLowerCase().includes(loc.toLowerCase())
+        ? `${calle}, ${loc}`
+        : calle;
+
+      const key = (cleanPkg + '|' + fullAddress).toLowerCase();
+      if (!vistos.has(key) && calle.length > 2) {
         vistos.add(key);
         unicos.push({
           paquete: cleanPkg || (unicos.length + 1).toString(),
           remitente: String(e.remitente || 'Destinatario').trim(),
-          direccion: addr,
-          localidad: String(e.localidad || '').trim(),
+          direccion: fullAddress,
+          localidad: loc,
           fueraDeZona: false
         });
       }
     }
 
+    // Ordenamiento agrupando por localidad y orden continuo de calles
     unicos.sort((a, b) => {
       const locCompare = a.localidad.localeCompare(b.localidad);
       if (locCompare !== 0) return locCompare;
@@ -678,11 +686,21 @@
     document.getElementById('welcomeSection').style.display = 'none';
     document.getElementById('scanControls').style.display = 'none';
     
-    updateStep(1, 30, "Extrayendo direcciones de las planillas...");
+    updateStep(1, 30, "Extrayendo direcciones y localidades...");
 
     try {
-      const prompt = `Extrae todas las filas de entregas de estas planillas en un JSON simple.
-Devuelve únicamente este formato: [{"paquete": "1", "remitente": "Nombre", "direccion": "Calle y Altura", "localidad": "Localidad o Barrio"}]`;
+      const prompt = `Analiza estas planillas de reparto y extrae todas las entregas.
+Es OBLIGATORIO extraer la localidad o barrio de cada paquete (si no figura en la fila, tómala del encabezado de la hoja o zona general).
+
+Devuelve únicamente un arreglo JSON con esta estructura exacta:
+[
+  {
+    "paquete": "1",
+    "remitente": "Nombre y Apellido",
+    "calle": "Calle y Altura",
+    "localidad": "Localidad o Barrio"
+  }
+]`;
 
       const parts = [{ text: prompt }, ...fotosAcumuladas];
       const requestBody = {
@@ -692,7 +710,6 @@ Devuelve únicamente este formato: [{"paquete": "1", "remitente": "Nombre", "dir
         }
       };
 
-      // Apunta directo a gemini-3.6-flash
       const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
