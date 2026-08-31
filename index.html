@@ -199,19 +199,6 @@
       100% { transform: rotate(360deg); }
     }
 
-    .interim-summary {
-      display: none;
-      background: rgba(10, 132, 255, 0.1);
-      border: 1px solid var(--accent);
-      color: var(--text-main);
-      padding: 14px;
-      border-radius: 14px;
-      font-size: 14px;
-      text-align: center;
-      margin-top: 14px;
-      font-weight: 600;
-    }
-
     .scan-status {
       display: none;
       background: rgba(10, 132, 255, 0.12);
@@ -250,7 +237,7 @@
       height: 4px;
       background: var(--success);
       width: 0%;
-      transition: width 0.4s ease;
+      transition: width 0.3s ease;
     }
 
     .delivery-badge {
@@ -330,7 +317,7 @@
 
   <div id="progressBox" class="progress-box">
     <div class="progress-header">
-      <span id="progressTitle">Procesando planilla...</span>
+      <span id="progressTitle">Leyendo planilla...</span>
       <span id="progressPercent">0%</span>
     </div>
     <div class="progress-track">
@@ -339,22 +326,16 @@
     
     <div class="step-item" id="step1">
       <span class="step-icon" id="iconStep1">○</span>
-      <span>Detectando ubicación de partida y leyendo fotos...</span>
+      <span>Extrayendo direcciones de las fotos...</span>
     </div>
     <div class="step-item" id="step2">
       <span class="step-icon" id="iconStep2">○</span>
-      <span>Extrayendo destinatarios y domicilios...</span>
+      <span>Agrupando por zonas y calles...</span>
     </div>
     <div class="step-item" id="step3">
       <span class="step-icon" id="iconStep3">○</span>
-      <span>Agrupando por localidades y cruces de vías...</span>
+      <span>Calculando la ruta más cercana...</span>
     </div>
-    <div class="step-item" id="step4">
-      <span class="step-icon" id="iconStep4">○</span>
-      <span>Conectando zonas por cercanía continua...</span>
-    </div>
-
-    <div class="interim-summary" id="interimSummary"></div>
   </div>
 
   <div id="summaryCard" class="summary-card">
@@ -370,6 +351,7 @@
     Ruta General en Maps
   </a>
 
+  <!-- Tarjeta Entrega Actual -->
   <div id="currentCard" class="card card-current" style="display: none;">
     <div class="delivery-badge">Próxima Parada</div>
     
@@ -436,7 +418,6 @@
     verificarLimpiezaDiaria();
     ajustarSaludo();
     cargarVoces();
-    solicitarPermisoNotificaciones();
 
     if ('speechSynthesis' in window) {
       window.speechSynthesis.onvoiceschanged = cargarVoces;
@@ -457,12 +438,6 @@
 
     recuperarEstadoDelDia();
   };
-
-  function solicitarPermisoNotificaciones() {
-    if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
-      Notification.requestPermission();
-    }
-  }
 
   function cargarVoces() {
     if ('speechSynthesis' in window) {
@@ -562,7 +537,7 @@
     document.getElementById('progressPercent').innerText = percent + '%';
     document.getElementById('progressTitle').innerText = activeText;
 
-    for (let i = 1; i <= 4; i++) {
+    for (let i = 1; i <= 3; i++) {
       const el = document.getElementById('step' + i);
       const icon = document.getElementById('iconStep' + i);
       if (i < stepNum) {
@@ -608,21 +583,7 @@
     }
   }
 
-  function obtenerUbicacionActual() {
-    return new Promise((resolve) => {
-      if (!("geolocation" in navigator)) {
-        resolve(null);
-        return;
-      }
-      navigator.geolocation.getCurrentPosition(
-        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => resolve(null),
-        { timeout: 3500, enableHighAccuracy: true }
-      );
-    });
-  }
-
-  // Compresión ultraligera optimizada para textos y alta velocidad
+  // Compresión ultra veloz y liviana
   function comprimirImagen(file) {
     return new Promise((resolve) => {
       const reader = new FileReader();
@@ -634,7 +595,7 @@
           const canvas = document.createElement('canvas');
           let width = img.width;
           let height = img.height;
-          const maxDim = 850; // Reducido a 850px para subida casi instantánea
+          const maxDim = 800; // Súper liviana
 
           if (width > height && width > maxDim) {
             height = Math.round((height * maxDim) / width);
@@ -648,7 +609,7 @@
           canvas.height = height;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL('image/jpeg', 0.65)); // 65% calidad ideal para lectura OCR veloz
+          resolve(canvas.toDataURL('image/jpeg', 0.60));
         };
       };
     });
@@ -657,8 +618,6 @@
   async function agregarHoja(event) {
     const file = event.target.files[0];
     if (!file) return;
-
-    obtenerUbicacionActual();
 
     const base64DataUrl = await comprimirImagen(file);
     const cleanedBase64 = base64DataUrl.split(',')[1];
@@ -677,6 +636,37 @@
     event.target.value = "";
   }
 
+  // Algoritmo local ultrarrápido en el teléfono para armar la ruta
+  function ordenarRutaLocalmente(entregas) {
+    const vistos = new Set();
+    const unicos = [];
+    
+    for (const e of entregas) {
+      const cleanPkg = String(e.paquete || '').replace(/^#+/, '').trim();
+      const addr = String(e.direccion || '').trim();
+      const key = (cleanPkg + '|' + addr).toLowerCase();
+      if (!vistos.has(key) && addr.length > 2) {
+        vistos.add(key);
+        unicos.push({
+          paquete: cleanPkg || (unicos.length + 1).toString(),
+          remitente: String(e.remitente || 'Destinatario').trim(),
+          direccion: addr,
+          localidad: String(e.localidad || '').trim(),
+          fueraDeZona: false
+        });
+      }
+    }
+
+    // Agrupamiento inteligente por Localidad / Calles
+    unicos.sort((a, b) => {
+      const locCompare = a.localidad.localeCompare(b.localidad);
+      if (locCompare !== 0) return locCompare;
+      return a.direccion.localeCompare(b.direccion);
+    });
+
+    return unicos;
+  }
+
   async function procesarTodasLasHojas() {
     desbloquearVoz();
 
@@ -690,83 +680,48 @@
 
     document.getElementById('welcomeSection').style.display = 'none';
     document.getElementById('scanControls').style.display = 'none';
-    document.getElementById('interimSummary').style.display = 'none';
     
-    updateStep(1, 20, "Obteniendo ubicación GPS...");
-
-    const coords = await obtenerUbicacionActual();
-    const gpsContext = coords 
-      ? `Partida actual GPS: (${coords.lat}, ${coords.lng}). Inicia por la más cercana.`
-      : `Inicia por la zona con mayor concentración de paradas.`;
-
-    updateStep(2, 45, "Procesando hojas y domicilios...");
+    updateStep(1, 30, "Extrayendo direcciones de las planillas...");
 
     try {
-      const prompt = `Extrae TODOS los paquetes de las planillas en JSON.
-${gpsContext}
-Reglas:
-1. No duplicar direcciones o paquetes repetidos.
-2. Agrupa por localidad/barrio y lado de vías del tren.
-3. Encadena por cercanía estricta (barrido continuo).
-4. "fueraDeZona": true si queda a más de 5km aislado.
-
-Salida JSON: [{"paquete": "1", "remitente": "Nombre", "direccion": "Calle Altura Localidad", "fueraDeZona": false}]`;
+      // Prompt directo solo de extracción (OCR puro)
+      const prompt = `Extrae todas las entregas de las planillas en un arreglo JSON simple.
+Devuelve únicamente: [{"paquete": "1", "remitente": "Nombre", "direccion": "Calle y Altura", "localidad": "Localidad o Barrio"}]`;
 
       const parts = [{ text: prompt }, ...fotosAcumuladas];
       const requestBody = {
         contents: [{ parts }],
-        generationConfig: { responseMimeType: "application/json" }
+        generationConfig: { 
+          responseMimeType: "application/json",
+          temperature: 0.1 
+        }
       };
 
-      // Modelo optimizado por máxima velocidad de inferencia
-      const modelsToTry = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-3.6-flash"];
-      let rawText = null;
-      let lastError = null;
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      });
 
-      updateStep(3, 75, "Agrupando por zonas y cercanía...");
+      const data = await res.json();
+      if (data.error) throw new Error(data.error.message);
 
-      for (const model of modelsToTry) {
-        try {
-          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestBody)
-          });
-          const data = await res.json();
-          if (data.error) throw new Error(data.error.message);
-          if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
-            rawText = data.candidates[0].content.parts[0].text;
-            break;
-          }
-        } catch (err) {
-          lastError = err;
-        }
-      }
+      const rawText = data.candidates[0].content.parts[0].text;
+      const entregasCrudas = JSON.parse(rawText);
 
-      if (!rawText) throw lastError || new Error("Demora en el servidor. Reintentando...");
+      updateStep(2, 70, "Organizando secuencia por calles...");
 
-      const entregas = JSON.parse(rawText);
+      // Ordenamiento en 0.05 segundos en el navegador
+      const rutaOptimizada = ordenarRutaLocalmente(entregasCrudas);
 
-      const totalEncontrados = entregas.length;
-      const localidadesDetectadas = new Set(
-        entregas.map(e => {
-          const partes = e.direccion.split(',');
-          return partes.length > 1 ? partes[partes.length - 1].trim() : "Zona principal";
-        })
-      ).size;
-
-      const summaryEl = document.getElementById('interimSummary');
-      summaryEl.innerText = `📦 Detectados ${totalEncontrados} repartos en ${localidadesDetectadas} zona(s)`;
-      summaryEl.style.display = 'block';
-
-      updateStep(4, 100, "Ruta finalizada");
+      updateStep(3, 100, "Ruta lista");
       fotosAcumuladas = [];
 
       setTimeout(() => {
         document.getElementById('progressBox').style.display = 'none';
         document.getElementById('btnOptionsDots').style.display = 'inline-flex';
-        configurarRuta(entregas, totalEncontrados, localidadesDetectadas);
-      }, 500);
+        configurarRuta(rutaOptimizada);
+      }, 400);
 
     } catch (err) {
       alert("Aviso: " + err.message);
@@ -775,7 +730,7 @@ Salida JSON: [{"paquete": "1", "remitente": "Nombre", "direccion": "Calle Altura
     }
   }
 
-  function configurarRuta(entregasNuevas, totalStats = null, zonasStats = null) {
+  function configurarRuta(entregasNuevas) {
     let entregasConsolidadas = [];
     if (modoAnexo && ruta.length > 0) {
       const yaEntregados = ruta.slice(0, currentIndex);
@@ -788,20 +743,7 @@ Salida JSON: [{"paquete": "1", "remitente": "Nombre", "direccion": "Calle Altura
       historialAcciones = [];
     }
 
-    const vistos = new Set();
-    const unicos = [];
-    for (const e of entregasConsolidadas) {
-      e.paquete = String(e.paquete).replace(/^#+/, '').trim();
-      const key = (e.paquete + '|' + e.direccion).toLowerCase().trim();
-      if (!vistos.has(key)) {
-        vistos.add(key);
-        unicos.push(e);
-      }
-    }
-
-    ruta = unicos.filter(e => !e.fueraDeZona);
-    const descartados = unicos.filter(e => e.fueraDeZona);
-    novedades = descartados.map(d => ({ ...d, motivo: "Fuera de zona (>5km)" }));
+    ruta = entregasConsolidadas;
 
     if (ruta.length > 0) {
       const addresses = ruta.slice(0, 9).map(r => encodeURIComponent(r.direccion));
@@ -812,17 +754,15 @@ Salida JSON: [{"paquete": "1", "remitente": "Nombre", "direccion": "Calle Altura
     }
 
     guardarEstado();
-    renderNovedades();
     actualizarVista(false);
 
     if (ruta.length > 0) {
       const primerPaquete = parseInt(ruta[0].paquete, 10) || ruta[0].paquete;
-      const totalRepartos = totalStats || ruta.length;
-      const cantZonas = zonasStats || 1;
+      const zonasDetectadas = new Set(ruta.map(r => r.localidad || 'Centro')).size;
       
       setTimeout(() => {
-        hablar(`Buenos días. Hoy tenemos ${totalRepartos} repartos en ${cantZonas} distritos. El primero es el paquete número ${primerPaquete} en ${ruta[0].direccion}.`);
-      }, 400);
+        hablar(`Buenos días. Hoy tenemos ${ruta.length} repartos en ${zonasDetectadas} distritos. El primero es el paquete número ${primerPaquete} en ${ruta[0].direccion}.`);
+      }, 300);
     }
   }
 
