@@ -155,22 +155,21 @@
 
   // Cargar API Key guardada
   window.onload = () => {
-    const savedKey = localStorage.getItem('gemini_api_key');
-    if (savedKey) document.getElementById('apiKeyInput').value = savedKey;
-  };
+  const savedKey = localStorage.getItem('gemini_api_key');
+  if (savedKey) {
+    document.getElementById('apiKeyInput').value = savedKey;
+    document.getElementById('apiKeySection').style.display = 'none'; // Se oculta sola
+  }
+};
 
-  function saveApiKey() {
-    const key = document.getElementById('apiKeyInput').value.trim();
+function saveApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (key) {
     localStorage.setItem('gemini_api_key', key);
+    document.getElementById('apiKeySection').style.display = 'none';
+    alert("¡Clave guardada con éxito!");
   }
-
-  function hablar(texto) {
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(texto);
-      utterance.lang = 'es-AR';
-      window.speechSynthesis.speak(utterance);
-    }
-  }
+}
 
   async function procesarFoto(event) {
     const file = event.target.files[0];
