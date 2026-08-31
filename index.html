@@ -330,7 +330,7 @@
     </div>
     <div class="step-item" id="step2">
       <span class="step-icon" id="iconStep2">○</span>
-      <span>Detectando zonas aisladas (> 5 km)...</span>
+      <span>Detectando puntos aislados huérfanos (> 5 km)...</span>
     </div>
     <div class="step-item" id="step3">
       <span class="step-icon" id="iconStep3">○</span>
@@ -637,12 +637,29 @@
     event.target.value = "";
   }
 
+  // Limpia "P-019", "PAQ-05", "#002" para que quede solo el número entero limpio
+  function sanitizarNumeroPaquete(raw) {
+    if (!raw) return "";
+    let str = String(raw).trim();
+    // Remueve prefijos típicos como P-, PKG-, PAQ-, #
+    str = str.replace(/^(p|pkg|paq|paquete|item)[\s\-_#]*/i, '');
+    str = str.replace(/^#+/, '');
+    
+    // Si tiene ceros a la izquierda (ej: "019" -> "19") los normaliza si es un número válido
+    const matchNumero = str.match(/\d+/);
+    if (matchNumero) {
+      const parsed = parseInt(matchNumero[0], 10);
+      return isNaN(parsed) ? str : String(parsed);
+    }
+    return str || "1";
+  }
+
   function procesarYFiltrarEntregas(entregasCrudas) {
     const vistos = new Set();
     const procesadas = [];
     
     for (const e of entregasCrudas) {
-      const cleanPkg = String(e.paquete || '').replace(/^#+/, '').trim();
+      const cleanPkg = sanitizarNumeroPaquete(e.paquete);
       const calle = String(e.calle || e.direccion || '').trim();
       const loc = String(e.localidad || '').trim();
       const fueraDeZona = Boolean(e.fueraDeZona);
@@ -686,17 +703,23 @@
     try {
       const prompt = `Analiza estas planillas de reparto y extrae todas las entregas.
 
-REGLAS DE EXTRACCIÓN:
-1. Extrae número de paquete, remitente/destinatario, calle con altura y localidad o barrio.
-2. REGLA DE 5 KM / FUERA DE ZONA: Identifica el conglomerado o localidad principal de la mayoría de paquetes. Si un paquete pertenece a una localidad lejana o queda claramente a más de 5 km de distancia del grupo principal, márcalo con "fueraDeZona": true. Para los paquetes normales dentro de la zona de reparto, coloca "fueraDeZona": false.
+REGLAS DE IDENTIFICACIÓN:
+1. "paquete": Extrae ÚNICAMENTE el número identificador (ejemplo: si en la hoja dice "P-019" o "PAQ 019", devuelve "19").
+2. "remitente": Nombre y apellido.
+3. "calle": Calle y altura.
+4. "localidad": Localidad o barrio.
+
+REGLA DE PUNTOS AISLADOS (OUTLIERS):
+- Si hay un grupo de paradas en una ciudad y otro grupo en otra ciudad (incluso a 10 km), AMBOS GRUPOS SON VÁLIDOS ("fueraDeZona": false).
+- Marca "fueraDeZona": true ÚNICAMENTE si hay 1 o 2 entregas solitarias totalmente huérfanas y aisladas a más de 5 km de cualquier otra parada.
 
 Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
 [
   {
-    "paquete": "1",
+    "paquete": "19",
     "remitente": "Nombre y Apellido",
     "calle": "Calle y Altura",
-    "localidad": "Localidad o Barrio",
+    "localidad": "Localidad",
     "fueraDeZona": false
   }
 ]`;
@@ -745,7 +768,7 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
 
       const entregasCrudas = JSON.parse(rawText);
 
-      updateStep(2, 70, "Filtrando zonas y ordenando ruta...");
+      updateStep(2, 70, "Organizando secuencia por localidades y calles...");
 
       const entregasProcesadas = procesarYFiltrarEntregas(entregasCrudas);
 
@@ -778,11 +801,10 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
       historialAcciones = [];
     }
 
-    // Separación estricta de ruta activa vs descartados (> 5km)
     const validos = entregasConsolidadas.filter(e => !e.fueraDeZona);
     const descartados = entregasConsolidadas.filter(e => e.fueraDeZona);
 
-    // Ordenamiento por localidad y calles de los paquetes válidos
+    // Agrupamiento secuencial por localidades y calles
     validos.sort((a, b) => {
       const locCompare = a.localidad.localeCompare(b.localidad);
       if (locCompare !== 0) return locCompare;
@@ -790,7 +812,7 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
     });
 
     ruta = validos;
-    novedades = descartados.map(d => ({ ...d, motivo: "Fuera de zona (>5 km del grupo)" }));
+    novedades = descartados.map(d => ({ ...d, motivo: "Punto aislado (>5 km de otras paradas)" }));
 
     if (ruta.length > 0) {
       const addresses = ruta.slice(0, 9).map(r => encodeURIComponent(r.direccion));
@@ -807,7 +829,7 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
     actualizarVista(false);
 
     if (ruta.length > 0) {
-      const primerPaquete = parseInt(ruta[0].paquete, 10) || ruta[0].paquete;
+      const primerPaquete = ruta[0].paquete;
       const zonasDetectadas = new Set(ruta.map(r => r.localidad || 'Centro')).size;
       
       setTimeout(() => {
@@ -819,14 +841,12 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
   function renderNovedades() {
     if (novedades.length > 0) {
       const issuesList = document.getElementById('issuesList');
-      issuesList.innerHTML = novedades.map(n => {
-        const pkgNum = String(n.paquete).replace(/^#+/, '');
-        return `
+      issuesList.innerHTML = novedades.map(n => `
         <div style="margin-bottom: 8px;">
-          <strong>#${pkgNum}</strong> • ${n.direccion}<br>
+          <strong>#${n.paquete}</strong> • ${n.direccion}<br>
           <span style="color: var(--danger); font-size: 13px;">${n.motivo}</span>
-        </div>`;
-      }).join('');
+        </div>`
+      ).join('');
       document.getElementById('issuesSection').style.display = 'block';
     } else {
       document.getElementById('issuesSection').style.display = 'none';
@@ -862,8 +882,9 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
     document.getElementById('sumEta').innerText = horaTexto24 + ' hs';
 
     const cur = ruta[currentIndex];
-    const cleanPkgNum = String(cur.paquete).replace(/^#+/, '');
-    document.getElementById('curPkg').innerText = `#${cleanPkgNum}`;
+    
+    // Vista visual: #19
+    document.getElementById('curPkg').innerText = `#${cur.paquete}`;
     document.getElementById('curAddress').innerText = cur.direccion;
     document.getElementById('curName').innerText = cur.remitente;
 
@@ -874,26 +895,24 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
     const queueList = document.getElementById('queueList');
     const siguientes = ruta.slice(currentIndex + 1);
     if (siguientes.length > 0) {
-      queueList.innerHTML = siguientes.map(s => {
-        const nextCleanNum = String(s.paquete).replace(/^#+/, '');
-        return `
+      queueList.innerHTML = siguientes.map(s => `
         <div class="stop-row">
-          <div class="stop-num">#${nextCleanNum}</div>
+          <div class="stop-num">#${s.paquete}</div>
           <div class="stop-info">
             <div class="stop-addr">${s.direccion}</div>
             <div class="stop-person">${s.remitente}</div>
           </div>
-        </div>`;
-      }).join('');
+        </div>`
+      ).join('');
       document.getElementById('nextSection').style.display = 'block';
     } else {
       document.getElementById('nextSection').style.display = 'none';
     }
 
+    // Audio hablado: "Próxima parada, paquete número 19. En Calle 123"
     if (cantarPorVoz) {
-      const numeroHablado = parseInt(cleanPkgNum, 10) || cleanPkgNum;
       setTimeout(() => {
-        hablar(`Próxima parada, paquete número ${numeroHablado}. En ${cur.direccion}`);
+        hablar(`Próxima parada, paquete número ${cur.paquete}. En ${cur.direccion}`);
       }, 300);
     }
   }
