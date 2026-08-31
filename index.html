@@ -182,12 +182,32 @@ window.onload = () => {
   }
 
   document.getElementById('loading').style.display = 'block';
+  document.getElementById('loading').innerText = "⏳ Detectando modelo y procesando hoja...";
   document.getElementById('uploadLabel').style.display = 'none';
 
   try {
     const base64Image = await toBase64(file);
     const cleanedBase64 = base64Image.split(',')[1];
     const mimeType = file.type || 'image/jpeg';
+
+    // 1. Pregunta a Google qué modelos tiene activos tu clave
+    const modelsRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+    const modelsData = await modelsRes.json();
+
+    if (modelsData.error) {
+      throw new Error("Clave inválida o bloqueada: " + modelsData.error.message);
+    }
+
+    // 2. Elige automáticamente el modelo Gemini compatible
+    const validModel = modelsData.models?.find(m => 
+      m.supportedGenerationMethods?.includes('generateContent') && 
+      m.name.includes('flash')
+    ) || modelsData.models?.find(m => 
+      m.supportedGenerationMethods?.includes('generateContent') && 
+      m.name.includes('gemini')
+    );
+
+    const modelName = validModel ? validModel.name : "models/gemini-1.5-flash";
 
     const prompt = `Analiza esta planilla de logística y devuelve EXCLUSIVAMENTE un arreglo JSON válido (sin markdown ni comillas invertidas).
 Cada elemento debe tener:
@@ -198,11 +218,10 @@ Cada elemento debe tener:
 
 Ordena los elementos válidos formando una secuencia lógica por proximidad y sectores.`;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+    // 3. Envía la imagen al modelo detectado
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/${modelName}:generateContent?key=${apiKey}`, {
       method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{
           parts: [
@@ -221,7 +240,7 @@ Ordena los elementos válidos formando una secuencia lógica por proximidad y se
     const data = await response.json();
 
     if (data.error) {
-      throw new Error(data.error.message || "Error en la API de Google");
+      throw new Error(data.error.message);
     }
 
     let rawText = data.candidates[0].content.parts[0].text;
