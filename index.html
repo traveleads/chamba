@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Reparto Pro</title>
+  <style>
+    :root {
+      --bg: #F2F2F7;
+      --card-bg: #FFFFFF;
+      --accent: #007AFF;
+      --success: #34C759;
+      --warning: #FF9500;
+      --danger: #FF3B30;
+      --text: #1C1C1E;
+      --subtext: #8E8E93;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding: 16px; padding-bottom: 40px; }
+
+    .container { max-width: 500px; margin: 0 auto; }
+    h1 { font-size: 26px; font-weight: 700; margin-bottom: 12px; text-align: center; }
+
+    /* Configuración API Key */
+    .config-box { background: var(--card-bg); padding: 14px; border-radius: 16px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+    .config-box input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #D1D1D6; font-size: 16px; outline: none; }
+
+    /* Tarjetas */
+    .card {
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+    }
+
+    /* Botón principal de escaneo */
+    .upload-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--accent);
+      color: white;
+      font-size: 20px;
+      font-weight: 600;
+      padding: 18px;
+      border-radius: 16px;
+      cursor: pointer;
+      text-align: center;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 12px rgba(0, 122, 255, 0.25);
+    }
+    input[type="file"] { display: none; }
+
+    /* Indicador de estado y motivación */
+    .status-badge {
+      background: #E5F0FF;
+      color: var(--accent);
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    /* Foco actual: Modo Reparto */
+    .current-delivery {
+      border: 3px solid var(--accent);
+      background: #FFFFFF;
+    }
+    .current-label { font-size: 14px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.5px; }
+    .pkg-number { font-size: 42px; font-weight: 800; color: var(--accent); margin: 6px 0; }
+    .address { font-size: 22px; font-weight: 700; line-height: 1.2; margin-bottom: 6px; }
+    .client-name { font-size: 18px; color: var(--subtext); margin-bottom: 16px; font-weight: 500; }
+
+    /* Botones de acción */
+    .action-btn {
+      display: block;
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 14px;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 10px;
+      text-align: center;
+      text-decoration: none;
+    }
+    .btn-maps { background-color: #007AFF; color: white; }
+    .btn-done { background-color: var(--success); color: white; }
+
+    /* Lista siguiente */
+    .next-list h3 { font-size: 18px; margin-bottom: 10px; color: var(--subtext); }
+    .item-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid #E5E5EA;
+    }
+    .item-pkg { font-weight: 700; font-size: 18px; width: 65px; }
+    .item-info { flex: 1; font-size: 15px; }
+    .item-info span { display: block; color: var(--subtext); font-size: 13px; }
+
+    /* Descartados */
+    .discarded-card { border-left: 5px solid var(--danger); }
+    .loading-spinner { text-align: center; font-size: 18px; font-weight: 600; padding: 20px; display: none; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Reparto Inteligente</h1>
+
+  <div class="config-box" id="apiKeySection">
+    <input type="password" id="apiKeyInput" placeholder="Pegar Gemini API Key aquí" onchange="saveApiKey()" />
+  </div>
+
+  <label class="upload-btn" id="uploadLabel">
+    📷 Sacar Foto a la Planilla
+    <input type="file" accept="image/*" capture="environment" onchange="procesarFoto(event)" />
+  </label>
+
+  <div id="loading" class="loading-spinner">⏳ Analizando hoja y ordenando ruta...</div>
+
+  <div id="statusBadge" class="status-badge" style="display: none;"></div>
+
+  <div id="currentDeliveryCard" class="card current-delivery" style="display: none;">
+    <div class="current-label">Próxima Parada</div>
+    <div class="pkg-number" id="curPkg">#--</div>
+    <div class="address" id="curAddress">--</div>
+    <div class="client-name" id="curName">--</div>
+
+    <a id="btnMaps" class="action-btn btn-maps" target="_blank">🗺️ Navegar en Google Maps</a>
+    <button class="action-btn btn-done" onclick="marcarEntregado()">✅ Marcar como Entregado</button>
+  </div>
+
+  <div id="nextSection" class="card next-list" style="display: none;">
+    <h3>Siguientes entregas</h3>
+    <div id="queueList"></div>
+  </div>
+
+  <div id="discardedSection" class="card discarded-card" style="display: none;">
+    <h3 style="color: var(--danger); font-size: 16px; margin-bottom: 8px;">⚠️ Fuera de Zona (> 5 km)</h3>
+    <div id="discardedList" style="font-size: 14px;"></div>
+  </div>
+</div>
+
+<script>
+  let ruta = [];
+  let currentIndex = 0;
+
+  // Cargar API Key guardada
+  window.onload = () => {
+    const savedKey = localStorage.getItem('gemini_api_key');
+    if (savedKey) document.getElementById('apiKeyInput').value = savedKey;
+  };
+
+  function saveApiKey() {
+    const key = document.getElementById('apiKeyInput').value.trim();
+    localStorage.setItem('gemini_api_key', key);
+  }
+
+  function hablar(texto) {
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(texto);
+      utterance.lang = 'es-AR';
+      window.speechSynthesis.speak(utterance);
+    }
+  }
+
+  async function procesarFoto(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const apiKey = document.getElementById('apiKeyInput').value.trim();
+    if (!apiKey) {
+      alert("Por favor cargá tu API Key primero.");
+      return;
+    }
+
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('uploadLabel').style.display = 'none';
+
+    const base64Image = await toBase64(file);
+    const cleanedBase64 = base64Image.split(',')[1];
+
+    const prompt = `Analiza esta planilla de logística y devuelve EXCLUSIVAMENTE un arreglo JSON válido (sin markdown ni comillas invertidas).
+Cada elemento debe tener:
+- "paquete": número de paquete (string)
+- "remitente": nombre y apellido
+- "direccion": calle, altura y localidad
+- "fueraDeZona": booleano (true si la dirección está claramente aislada o a más de 5km del grupo principal).
+
+Ordena los elementos válidos formando una secuencia lógica por proximidad y sectores.`;
+
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: prompt },
+              { inline_data: { mime_type: file.type, data: cleanedBase64 } }
+            ]
+          }]
+        })
+      });
+
+      const data = await response.json();
+      let rawText = data.candidates[0].content.parts[0].text;
+      rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+
+      const entregas = JSON.parse(rawText);
+      configurarRuta(entregas);
+    } catch (err) {
+      alert("Error al procesar la imagen. Verifica la calidad de la foto o la API Key.");
+      console.error(err);
+      document.getElementById('uploadLabel').style.display = 'flex';
+    } finally {
+      document.getElementById('loading').style.display = 'none';
+    }
+  }
+
+  function configurarRuta(entregas) {
+    const validos = entregas.filter(e => !e.fueraDeZona);
+    const descartados = entregas.filter(e => e.fueraDeZona);
+
+    ruta = validos;
+    currentIndex = 0;
+
+    // Calcular hora estimada (promedio 8 min por paquete)
+    const minutosTotales = validos.length * 8;
+    const ahora = new Date();
+    const horaFin = new Date(ahora.getTime() + minutosTotales * 60000);
+    const horaTexto = horaFin.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    const badge = document.getElementById('statusBadge');
+    badge.innerText = `📦 ${validos.length} entregas • Finalización est.: ${horaTexto} hs`;
+    badge.style.display = 'block';
+
+    if (descartados.length > 0) {
+      const discList = document.getElementById('discardedList');
+      discList.innerHTML = descartados.map(d => `• Paquete #${d.paquete}: ${d.direccion} (${d.remitente})`).join('<br>');
+      document.getElementById('discardedSection').style.display = 'block';
+    }
+
+    actualizarVista();
+  }
+
+  function actualizarVista() {
+    if (currentIndex >= ruta.length) {
+      document.getElementById('currentDeliveryCard').innerHTML = '<div style="text-align:center; font-size:24px; font-weight:700;">🎉 ¡Ruta completada!</div>';
+      document.getElementById('nextSection').style.display = 'none';
+      hablar("Excelente trabajo, completaron todas las entregas.");
+      return;
+    }
+
+    const cur = ruta[currentIndex];
+    document.getElementById('curPkg').innerText = `#${cur.paquete}`;
+    document.getElementById('curAddress').innerText = cur.direccion;
+    document.getElementById('curName').innerText = cur.remitente;
+
+    const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(cur.direccion)}`;
+    document.getElementById('btnMaps').href = mapsUrl;
+
+    document.getElementById('currentDeliveryCard').style.display = 'block';
+
+    // Lista de siguientes
+    const queueList = document.getElementById('queueList');
+    const siguientes = ruta.slice(currentIndex + 1);
+    if (siguientes.length > 0) {
+      queueList.innerHTML = siguientes.map(s => `
+        <div class="item-row">
+          <div class="item-pkg">#${s.paquete}</div>
+          <div class="item-info">
+            <strong>${s.direccion}</strong>
+            <span>${s.remitente}</span>
+          </div>
+        </div>
+      `).join('');
+      document.getElementById('nextSection').style.display = 'block';
+    } else {
+      document.getElementById('nextSection').style.display = 'none';
+    }
+
+    hablar(`Próxima entrega, paquete ${cur.paquete}. En ${cur.direccion}`);
+  }
+
+  function marcarEntregado() {
+    currentIndex++;
+    actualizarVista();
+  }
+
+  function toBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = error => reject(error);
+    });
+  }
+</script>
+</body>
+</html>
