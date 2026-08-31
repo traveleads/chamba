@@ -61,7 +61,6 @@
     }
     .header h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
 
-    /* Botón moderno de 3 puntos */
     .btn-options-dots {
       background: var(--card-bg);
       border: 1px solid var(--border-subtle);
@@ -402,6 +401,7 @@
   let novedades = [];
   let fotosAcumuladas = [];
   let modoAnexo = false;
+  let cachedVoices = [];
 
   const SVG_GEAR = `<svg class="spin-gear" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>`;
 
@@ -416,6 +416,11 @@
   window.onload = () => {
     verificarLimpiezaDiaria();
     ajustarSaludo();
+    cargarVoces();
+
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = cargarVoces;
+    }
 
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const keyFromUrl = hashParams.get('key');
@@ -432,6 +437,12 @@
 
     recuperarEstadoDelDia();
   };
+
+  function cargarVoces() {
+    if ('speechSynthesis' in window) {
+      cachedVoices = window.speechSynthesis.getVoices();
+    }
+  }
 
   function ajustarSaludo() {
     const hora = new Date().getHours();
@@ -470,7 +481,7 @@
       fotosAcumuladas = [];
       document.getElementById('scanControls').style.display = 'block';
       document.getElementById('scanStatus').style.display = 'none';
-      document.getElementById('btnPhotoText').innerText = "📷 Tomar Foto a la Nueva Hoja";
+      document.getElementById('btnPhotoText').innerText = "Tomar Foto a la Nueva Hoja";
       document.getElementById('addPhotoBtn').classList.remove('btn-secondary');
       document.getElementById('addPhotoBtn').classList.add('btn-primary');
       document.getElementById('btnProcessAll').style.display = 'none';
@@ -541,12 +552,31 @@
     }
   }
 
+  // Voz amable, pausada y femenina
   function hablar(texto) {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(texto);
-      utterance.lang = 'es-ES';
-      utterance.rate = 1.0;
+      utterance.lang = 'es-AR';
+      utterance.rate = 0.95;  // Velocidad calmada
+      utterance.pitch = 1.05; // Tono amable
+
+      if (cachedVoices.length === 0) {
+        cachedVoices = window.speechSynthesis.getVoices();
+      }
+
+      // Prioriza voces femeninas en español
+      const vozFemenina = cachedVoices.find(v => 
+        (v.lang.includes('es') || v.lang.includes('ES')) &&
+        (v.name.includes('Paulina') || v.name.includes('Monica') || v.name.includes('Mónica') || 
+         v.name.includes('Helena') || v.name.includes('Lucia') || v.name.includes('Lucía') ||
+         v.name.includes('Google español') || v.name.toLowerCase().includes('female'))
+      ) || cachedVoices.find(v => v.lang.startsWith('es'));
+
+      if (vozFemenina) {
+        utterance.voice = vozFemenina;
+      }
+
       window.speechSynthesis.speak(utterance);
     }
   }
@@ -850,9 +880,11 @@ Estructura de salida JSON (arreglo de objetos):
       document.getElementById('nextSection').style.display = 'none';
     }
 
+    // El audio pronuncia "paquete número X" de forma natural (limpiando ceros a la izquierda)
     if (cantarPorVoz) {
+      const numeroHablado = parseInt(cleanPkgNum, 10) || cleanPkgNum;
       setTimeout(() => {
-        hablar(`Próxima parada, número ${cleanPkgNum}. En ${cur.direccion}`);
+        hablar(`Próxima parada, paquete número ${numeroHablado}. En ${cur.direccion}`);
       }, 300);
     }
   }
