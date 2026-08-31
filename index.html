@@ -169,7 +169,7 @@
     }
     .progress-header { display: flex; justify-content: space-between; font-size: 15px; font-weight: 700; color: var(--accent); margin-bottom: 10px; }
     .progress-track { width: 100%; height: 8px; background: var(--border-subtle); border-radius: 4px; overflow: hidden; margin-bottom: 18px; }
-    .progress-fill { width: 0%; height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.4s ease; }
+    .progress-fill { width: 0%; height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.3s ease; }
     
     .step-item {
       display: flex;
@@ -224,7 +224,6 @@
       margin-bottom: 12px;
     }
 
-    /* Tarjeta de Resumen con Barra de Progreso Sutil */
     .summary-card {
       display: none;
       position: relative;
@@ -358,7 +357,6 @@
     <div class="interim-summary" id="interimSummary"></div>
   </div>
 
-  <!-- Resumen de progreso con barra sutil integrada -->
   <div id="summaryCard" class="summary-card">
     <div class="summary-content">
       <div>Progreso: <strong id="sumProgress">0/0</strong></div>
@@ -372,7 +370,6 @@
     Ruta General en Maps
   </a>
 
-  <!-- Tarjeta Entrega Actual -->
   <div id="currentCard" class="card card-current" style="display: none;">
     <div class="delivery-badge">Próxima Parada</div>
     
@@ -586,14 +583,13 @@
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(texto);
       utterance.lang = 'es-AR';
-      utterance.rate = 0.92; // Ritmo cómodo y comprensible
-      utterance.pitch = 1.0; // Tono natural
+      utterance.rate = 0.95;
+      utterance.pitch = 1.0;
 
       if (cachedVoices.length === 0) {
         cachedVoices = window.speechSynthesis.getVoices();
       }
 
-      // Prioriza voces de calidad superior
       const mejorVoz = cachedVoices.find(v => 
         (v.lang.includes('es') || v.lang.includes('ES')) &&
         (v.name.includes('Natural') || v.name.includes('Neural') || v.name.includes('Google') || 
@@ -621,11 +617,12 @@
       navigator.geolocation.getCurrentPosition(
         (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
         () => resolve(null),
-        { timeout: 5000, enableHighAccuracy: true }
+        { timeout: 3500, enableHighAccuracy: true }
       );
     });
   }
 
+  // Compresión ultraligera optimizada para textos y alta velocidad
   function comprimirImagen(file) {
     return new Promise((resolve) => {
       const reader = new FileReader();
@@ -637,7 +634,7 @@
           const canvas = document.createElement('canvas');
           let width = img.width;
           let height = img.height;
-          const maxDim = 1200;
+          const maxDim = 850; // Reducido a 850px para subida casi instantánea
 
           if (width > height && width > maxDim) {
             height = Math.round((height * maxDim) / width);
@@ -651,7 +648,7 @@
           canvas.height = height;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL('image/jpeg', 0.82));
+          resolve(canvas.toDataURL('image/jpeg', 0.65)); // 65% calidad ideal para lectura OCR veloz
         };
       };
     });
@@ -695,38 +692,25 @@
     document.getElementById('scanControls').style.display = 'none';
     document.getElementById('interimSummary').style.display = 'none';
     
-    updateStep(1, 15, "Obteniendo ubicación GPS...");
+    updateStep(1, 20, "Obteniendo ubicación GPS...");
 
     const coords = await obtenerUbicacionActual();
     const gpsContext = coords 
-      ? `El repartidor se encuentra actualmente en las coordenadas GPS: (${coords.lat}, ${coords.lng}). LA PRIMERA PARADA DEBE SER LA MÁS CERCANA A ESTE PUNTO DE PARTIDA.`
-      : `Inicia la ruta por la localidad o grupo que tenga la mayor concentración de paquetes cercanos.`;
+      ? `Partida actual GPS: (${coords.lat}, ${coords.lng}). Inicia por la más cercana.`
+      : `Inicia por la zona con mayor concentración de paradas.`;
 
-    updateStep(1, 30, "Leyendo fotos y datos...");
+    updateStep(2, 45, "Procesando hojas y domicilios...");
 
     try {
-      const prompt = `Analiza detalladamente todas las hojas de planilla adjuntas y extrae ABSOLUTAMENTE TODOS los paquetes listados.
-Consolida todo en una sola lista JSON válida.
-
-UBICACIÓN DE INICIO:
+      const prompt = `Extrae TODOS los paquetes de las planillas en JSON.
 ${gpsContext}
+Reglas:
+1. No duplicar direcciones o paquetes repetidos.
+2. Agrupa por localidad/barrio y lado de vías del tren.
+3. Encadena por cercanía estricta (barrido continuo).
+4. "fueraDeZona": true si queda a más de 5km aislado.
 
-LÓGICA DE OPTIMIZACIÓN POR BARRIDO TERRITORIAL (MUY ESTRICTA):
-1. DESDUPLICACIÓN: Si una misma dirección o número aparece repetido por doble foto, consérvalo una sola vez.
-2. NO ordenes por número correlativo.
-3. BARRIDO POR ZONA / LOCALIDAD:
-   - Identifica la localidad/barrio más cercano al punto de inicio.
-   - ENTREGA PRIMERO TODAS las paradas de esa misma localidad antes de moverte a la siguiente. JAMÁS saltes a una parada aislada a 4 km si tienes paradas a menos de 1 km en la zona actual.
-   - Si una localidad tiene vías de tren, termina primero un lado de la vía y luego el otro antes de cambiar de localidad.
-4. TRANSICIÓN ENTRE LOCALIDADES (PUENTE):
-   - La última parada de una localidad DEBE ser la que esté geográficamente más orientada hacia la próxima localidad a visitar.
-5. Marca "fueraDeZona": true si una dirección queda a más de 5 km del conglomerado principal.
-
-Estructura de salida JSON (arreglo de objetos):
-- "paquete": número o identificador limpio sin símbolos extra (string)
-- "remitente": nombre y apellido
-- "direccion": calle, altura y localidad completa
-- "fueraDeZona": booleano`;
+Salida JSON: [{"paquete": "1", "remitente": "Nombre", "direccion": "Calle Altura Localidad", "fueraDeZona": false}]`;
 
       const parts = [{ text: prompt }, ...fotosAcumuladas];
       const requestBody = {
@@ -734,13 +718,12 @@ Estructura de salida JSON (arreglo de objetos):
         generationConfig: { responseMimeType: "application/json" }
       };
 
-      const modelsToTry = ["gemini-2.5-flash", "gemini-3.6-flash", "gemini-flash-latest"];
+      // Modelo optimizado por máxima velocidad de inferencia
+      const modelsToTry = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-3.6-flash"];
       let rawText = null;
       let lastError = null;
 
-      setTimeout(() => updateStep(2, 50, "Extrayendo destinatarios y domicilios..."), 700);
-      setTimeout(() => updateStep(3, 75, "Agrupando localidades y cruces de vías..."), 1500);
-      setTimeout(() => updateStep(4, 90, "Conectando zonas por cercanía continua..."), 2400);
+      updateStep(3, 75, "Agrupando por zonas y cercanía...");
 
       for (const model of modelsToTry) {
         try {
@@ -760,7 +743,7 @@ Estructura de salida JSON (arreglo de objetos):
         }
       }
 
-      if (!rawText) throw lastError || new Error("No se pudo procesar el lote.");
+      if (!rawText) throw lastError || new Error("Demora en el servidor. Reintentando...");
 
       const entregas = JSON.parse(rawText);
 
@@ -783,7 +766,7 @@ Estructura de salida JSON (arreglo de objetos):
         document.getElementById('progressBox').style.display = 'none';
         document.getElementById('btnOptionsDots').style.display = 'inline-flex';
         configurarRuta(entregas, totalEncontrados, localidadesDetectadas);
-      }, 900);
+      }, 500);
 
     } catch (err) {
       alert("Aviso: " + err.message);
@@ -832,7 +815,6 @@ Estructura de salida JSON (arreglo de objetos):
     renderNovedades();
     actualizarVista(false);
 
-    // Saludo de apertura con resumen y primer paquete
     if (ruta.length > 0) {
       const primerPaquete = parseInt(ruta[0].paquete, 10) || ruta[0].paquete;
       const totalRepartos = totalStats || ruta.length;
@@ -877,7 +859,6 @@ Estructura de salida JSON (arreglo de objetos):
       return;
     }
 
-    // Actualiza resumen y barra de progreso sutil
     document.getElementById('summaryCard').style.display = 'block';
     document.getElementById('sumProgress').innerText = `${entregadosCount}/${total}`;
     
