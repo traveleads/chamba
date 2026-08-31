@@ -330,7 +330,7 @@
     </div>
     <div class="step-item" id="step2">
       <span class="step-icon" id="iconStep2">○</span>
-      <span>Agrupando por zonas y calles...</span>
+      <span>Detectando zonas aisladas (> 5 km)...</span>
     </div>
     <div class="step-item" id="step3">
       <span class="step-icon" id="iconStep3">○</span>
@@ -390,7 +390,7 @@
   </div>
 
   <div id="issuesSection" class="card" style="display: none; border-color: rgba(255, 69, 58, 0.3);">
-    <div class="section-title" style="color: var(--danger);">Aislados / Novedades</div>
+    <div class="section-title" style="color: var(--danger);">Aislados (> 5 km) / Novedades</div>
     <div id="issuesList" style="font-size: 14px; line-height: 1.5;"></div>
   </div>
 </div>
@@ -511,16 +511,18 @@
         historialAcciones = JSON.parse(localStorage.getItem('reparto_historial') || '[]');
         novedades = JSON.parse(localStorage.getItem('reparto_novedades') || '[]');
 
-        if (ruta.length > 0) {
+        if (ruta.length > 0 || novedades.length > 0) {
           document.getElementById('welcomeSection').style.display = 'none';
           document.getElementById('scanControls').style.display = 'none';
           document.getElementById('btnOptionsDots').style.display = 'inline-flex';
           
-          const addresses = ruta.slice(0, 9).map(r => encodeURIComponent(r.direccion));
-          const allMapsUrl = `https://www.google.com/maps/dir/${addresses.join('/')}`;
-          const btnAll = document.getElementById('btnAllMaps');
-          btnAll.href = allMapsUrl;
-          btnAll.style.display = 'inline-flex';
+          if (ruta.length > 0) {
+            const addresses = ruta.slice(0, 9).map(r => encodeURIComponent(r.direccion));
+            const allMapsUrl = `https://www.google.com/maps/dir/${addresses.join('/')}`;
+            const btnAll = document.getElementById('btnAllMaps');
+            btnAll.href = allMapsUrl;
+            btnAll.style.display = 'inline-flex';
+          }
 
           renderNovedades();
           actualizarVista(false);
@@ -635,14 +637,15 @@
     event.target.value = "";
   }
 
-  function ordenarRutaLocalmente(entregas) {
+  function procesarYFiltrarEntregas(entregasCrudas) {
     const vistos = new Set();
-    const unicos = [];
+    const procesadas = [];
     
-    for (const e of entregas) {
+    for (const e of entregasCrudas) {
       const cleanPkg = String(e.paquete || '').replace(/^#+/, '').trim();
       const calle = String(e.calle || e.direccion || '').trim();
       const loc = String(e.localidad || '').trim();
+      const fueraDeZona = Boolean(e.fueraDeZona);
 
       const fullAddress = loc && !calle.toLowerCase().includes(loc.toLowerCase())
         ? `${calle}, ${loc}`
@@ -651,23 +654,17 @@
       const key = (cleanPkg + '|' + fullAddress).toLowerCase();
       if (!vistos.has(key) && calle.length > 2) {
         vistos.add(key);
-        unicos.push({
-          paquete: cleanPkg || (unicos.length + 1).toString(),
+        procesadas.push({
+          paquete: cleanPkg || (procesadas.length + 1).toString(),
           remitente: String(e.remitente || 'Destinatario').trim(),
           direccion: fullAddress,
           localidad: loc,
-          fueraDeZona: false
+          fueraDeZona: fueraDeZona
         });
       }
     }
 
-    unicos.sort((a, b) => {
-      const locCompare = a.localidad.localeCompare(b.localidad);
-      if (locCompare !== 0) return locCompare;
-      return a.direccion.localeCompare(b.direccion);
-    });
-
-    return unicos;
+    return procesadas;
   }
 
   async function procesarTodasLasHojas() {
@@ -688,15 +685,19 @@
 
     try {
       const prompt = `Analiza estas planillas de reparto y extrae todas las entregas.
-Es OBLIGATORIO extraer la localidad o barrio de cada paquete (si no figura en la fila, tómala del encabezado de la hoja o zona general).
 
-Devuelve únicamente un arreglo JSON con esta estructura exacta:
+REGLAS DE EXTRACCIÓN:
+1. Extrae número de paquete, remitente/destinatario, calle con altura y localidad o barrio.
+2. REGLA DE 5 KM / FUERA DE ZONA: Identifica el conglomerado o localidad principal de la mayoría de paquetes. Si un paquete pertenece a una localidad lejana o queda claramente a más de 5 km de distancia del grupo principal, márcalo con "fueraDeZona": true. Para los paquetes normales dentro de la zona de reparto, coloca "fueraDeZona": false.
+
+Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
 [
   {
     "paquete": "1",
     "remitente": "Nombre y Apellido",
     "calle": "Calle y Altura",
-    "localidad": "Localidad o Barrio"
+    "localidad": "Localidad o Barrio",
+    "fueraDeZona": false
   }
 ]`;
 
@@ -708,7 +709,6 @@ Devuelve únicamente un arreglo JSON con esta estructura exacta:
         }
       };
 
-      // Lista de modelos ordenados por prioridad de fallback automático
       const modelos = [
         "gemini-3.6-flash",
         "gemini-2.0-flash",
@@ -733,10 +733,10 @@ Devuelve únicamente un arreglo JSON con esta estructura exacta:
 
           if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
             rawText = data.candidates[0].content.parts[0].text;
-            break; // Si respondió con éxito, salimos del bucle
+            break;
           }
         } catch (err) {
-          console.warn(`Modelo ${modelo} no disponible o cuota agotada: ${err.message}. Probando modelo de respaldo...`);
+          console.warn(`Modelo ${modelo} no disponible: ${err.message}. Probando respaldo...`);
           ultimoError = err;
         }
       }
@@ -745,9 +745,9 @@ Devuelve únicamente un arreglo JSON con esta estructura exacta:
 
       const entregasCrudas = JSON.parse(rawText);
 
-      updateStep(2, 70, "Organizando secuencia por calles...");
+      updateStep(2, 70, "Filtrando zonas y ordenando ruta...");
 
-      const rutaOptimizada = ordenarRutaLocalmente(entregasCrudas);
+      const entregasProcesadas = procesarYFiltrarEntregas(entregasCrudas);
 
       updateStep(3, 100, "Ruta lista");
       fotosAcumuladas = [];
@@ -755,11 +755,11 @@ Devuelve únicamente un arreglo JSON con esta estructura exacta:
       setTimeout(() => {
         document.getElementById('progressBox').style.display = 'none';
         document.getElementById('btnOptionsDots').style.display = 'inline-flex';
-        configurarRuta(rutaOptimizada);
+        configurarRuta(entregasProcesadas);
       }, 400);
 
     } catch (err) {
-      alert("Aviso: " + err.message);
+      alert("Detalle: " + err.message);
       document.getElementById('progressBox').style.display = 'none';
       document.getElementById('scanControls').style.display = 'block';
     }
@@ -778,7 +778,19 @@ Devuelve únicamente un arreglo JSON con esta estructura exacta:
       historialAcciones = [];
     }
 
-    ruta = entregasConsolidadas;
+    // Separación estricta de ruta activa vs descartados (> 5km)
+    const validos = entregasConsolidadas.filter(e => !e.fueraDeZona);
+    const descartados = entregasConsolidadas.filter(e => e.fueraDeZona);
+
+    // Ordenamiento por localidad y calles de los paquetes válidos
+    validos.sort((a, b) => {
+      const locCompare = a.localidad.localeCompare(b.localidad);
+      if (locCompare !== 0) return locCompare;
+      return a.direccion.localeCompare(b.direccion);
+    });
+
+    ruta = validos;
+    novedades = descartados.map(d => ({ ...d, motivo: "Fuera de zona (>5 km del grupo)" }));
 
     if (ruta.length > 0) {
       const addresses = ruta.slice(0, 9).map(r => encodeURIComponent(r.direccion));
@@ -786,9 +798,12 @@ Devuelve únicamente un arreglo JSON con esta estructura exacta:
       const btnAll = document.getElementById('btnAllMaps');
       btnAll.href = allMapsUrl;
       btnAll.style.display = 'inline-flex';
+    } else {
+      document.getElementById('btnAllMaps').style.display = 'none';
     }
 
     guardarEstado();
+    renderNovedades();
     actualizarVista(false);
 
     if (ruta.length > 0) {
