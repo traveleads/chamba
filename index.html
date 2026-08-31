@@ -17,8 +17,6 @@
       --border-subtle: rgba(0, 0, 0, 0.08);
       --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
       --btn-inner-light: inset 0 1px 0 rgba(255, 255, 255, 0.25);
-      
-      /* Borde de la tarjeta foco en Modo Claro */
       --card-focus-border: 2.5px solid #007AFF;
       --card-focus-glow: 0 4px 16px rgba(0, 122, 255, 0.12);
     }
@@ -30,15 +28,12 @@
         --text-main: #F2F2F7;
         --text-muted: #98989D;
         --accent: #0A84FF;
-        /* Verde más oscuro y apagado para no encandilar al volante de noche */
         --success: #1E6B34;
         --warning: #FFD60A;
         --danger: #FF453A;
         --border-subtle: rgba(255, 255, 255, 0.12);
         --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
         --btn-inner-light: inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        
-        /* Borde Amarillo en Modo Oscuro */
         --card-focus-border: 2.5px solid #FFD60A;
         --card-focus-glow: 0 0 14px rgba(255, 214, 10, 0.25);
       }
@@ -63,7 +58,6 @@
       box-shadow: var(--card-shadow);
     }
 
-    /* Tarjeta foco con borde dinámico (Azul de día / Amarillo de noche) */
     .card-current {
       border: var(--card-focus-border);
       box-shadow: var(--card-focus-glow);
@@ -92,6 +86,16 @@
     .btn-secondary { background: rgba(10, 132, 255, 0.15); color: var(--accent); box-shadow: none; border: 1px dashed var(--accent); }
     .btn-success { background: var(--success); color: #FFFFFF; }
     .btn-maps { background: #5856D6; color: #FFFFFF; }
+    .btn-undo {
+      background: var(--card-bg);
+      color: var(--text-muted);
+      border: 1px solid var(--border-subtle);
+      box-shadow: none;
+      padding: 12px;
+      font-size: 15px;
+      margin-top: 4px;
+      margin-bottom: 16px;
+    }
     .btn-outline-danger {
       background: transparent;
       color: var(--danger);
@@ -101,7 +105,6 @@
     .btn svg { width: 22px; height: 22px; fill: currentColor; }
     input[type="file"] { display: none; }
 
-    /* Barra de Progreso */
     .progress-bar-container {
       display: none;
       background: var(--card-bg);
@@ -154,7 +157,6 @@
       margin-bottom: 8px;
     }
 
-    /* Número de paquete con ícono de caja sin la palabra "paquete" */
     .pkg-row {
       display: flex;
       align-items: center;
@@ -194,17 +196,17 @@
   </div>
 
   <div id="scanControls">
-    <div id="scanStatus" class="scan-status">📄 0 hojas listas</div>
+    <div id="scanStatus" class="scan-status">0 hojas listas</div>
 
     <label class="btn btn-primary" id="addPhotoBtn">
       <svg viewBox="0 0 24 24"><path d="M4 4h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm8 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/></svg>
-      <span id="btnPhotoText">📷 Tomar Foto a la Hoja</span>
+      <span id="btnPhotoText">Tomar Foto a la Hoja</span>
       <input type="file" accept="image/*" capture="environment" onchange="agregarHoja(event)" />
     </label>
 
     <button class="btn btn-success" id="btnProcessAll" style="display: none;" onclick="procesarTodasLasHojas()">
-      <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-      🚀 Armar Ruta Óptima
+      <svg viewBox="0 0 24 24"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
+      Armar Ruta Óptima
     </button>
   </div>
 
@@ -225,12 +227,11 @@
     Ruta General en Maps
   </a>
 
-  <!-- Tarjeta Entrega Actual (Borde Azul de día / Amarillo de noche) -->
+  <!-- Tarjeta Entrega Actual -->
   <div id="currentCard" class="card card-current" style="display: none;">
     <div class="delivery-badge">Próxima Parada</div>
     
     <div class="pkg-row">
-      <!-- Ícono de Caja SVG -->
       <svg class="pkg-icon" viewBox="0 0 24 24"><path d="M21 16.5l-9 5.25-9-5.25V7.5L12 2.25l9 5.25v9zM12 4.15L5.04 8.2 12 12.25l6.96-4.05L12 4.15zM4.5 9.87v5.76L11.25 19.5v-5.76L4.5 9.87zm15 0l-6.75 3.87v5.76L19.5 15.63V9.87z"/></svg>
       <div class="pkg-title" id="curPkg">#--</div>
     </div>
@@ -254,6 +255,12 @@
     </button>
   </div>
 
+  <!-- Botón Deshacer Entrega Anterior -->
+  <button id="btnUndo" class="btn btn-undo" style="display: none;" onclick="deshacerUltimo()">
+    <svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>
+    Deshacer última entrega
+  </button>
+
   <div id="nextSection" class="card" style="display: none;">
     <div class="section-title">Siguientes entregas</div>
     <div id="queueList"></div>
@@ -268,7 +275,7 @@
 <script>
   let ruta = [];
   let currentIndex = 0;
-  let entregadosCount = 0;
+  let historialAcciones = []; // Guarda historial para deshacer
   let novedades = [];
   let proximidadAvisada = false;
   let fotosAcumuladas = [];
@@ -282,6 +289,9 @@
   }
 
   window.onload = () => {
+    // Control de reseteo a las 00:00 hs (diario)
+    verificarLimpiezaDiaria();
+
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const keyFromUrl = hashParams.get('key');
 
@@ -295,8 +305,58 @@
       if (configBox) configBox.style.display = 'none';
     }
 
+    // Cargar estado guardado si es del mismo día
+    recuperarEstadoDelDia();
     iniciarGPSProximidad();
   };
+
+  function verificarLimpiezaDiaria() {
+    const hoy = new Date().toISOString().slice(0, 10);
+    const fechaGuardada = localStorage.getItem('reparto_fecha');
+
+    if (fechaGuardada && fechaGuardada !== hoy) {
+      // Pasaron las 00:00 hs: limpia entregas viejas
+      localStorage.removeItem('reparto_ruta');
+      localStorage.removeItem('reparto_index');
+      localStorage.removeItem('reparto_historial');
+      localStorage.removeItem('reparto_novedades');
+    }
+    localStorage.setItem('reparto_fecha', hoy);
+  }
+
+  function guardarEstado() {
+    localStorage.setItem('reparto_ruta', JSON.stringify(ruta));
+    localStorage.setItem('reparto_index', currentIndex.toString());
+    localStorage.setItem('reparto_historial', JSON.stringify(historialAcciones));
+    localStorage.setItem('reparto_novedades', JSON.stringify(novedades));
+  }
+
+  function recuperarEstadoDelDia() {
+    const guardada = localStorage.getItem('reparto_ruta');
+    if (guardada) {
+      try {
+        ruta = JSON.parse(guardada);
+        currentIndex = parseInt(localStorage.getItem('reparto_index') || '0', 10);
+        historialAcciones = JSON.parse(localStorage.getItem('reparto_historial') || '[]');
+        novedades = JSON.parse(localStorage.getItem('reparto_novedades') || '[]');
+
+        if (ruta.length > 0) {
+          document.getElementById('scanControls').style.display = 'none';
+          
+          const addresses = ruta.slice(0, 9).map(r => encodeURIComponent(r.direccion));
+          const allMapsUrl = `https://www.google.com/maps/dir/${addresses.join('/')}`;
+          const btnAll = document.getElementById('btnAllMaps');
+          btnAll.href = allMapsUrl;
+          btnAll.style.display = 'inline-flex';
+
+          renderNovedades();
+          actualizarVista();
+        }
+      } catch (e) {
+        console.warn("Estado previo corrupto, reiniciando:", e);
+      }
+    }
+  }
 
   function setProgress(percent, text) {
     const pWrapper = document.getElementById('progressWrapper');
@@ -357,10 +417,10 @@
     fotosAcumuladas.push({ inlineData: { mimeType, data: cleanedBase64 } });
 
     const scanStatus = document.getElementById('scanStatus');
-    scanStatus.innerText = `📄 ${fotosAcumuladas.length} hoja(s) agregada(s) al lote`;
+    scanStatus.innerText = `${fotosAcumuladas.length} hoja(s) agregada(s) al lote`;
     scanStatus.style.display = 'block';
 
-    document.getElementById('btnPhotoText').innerText = "📷 Agregar Otra Hoja";
+    document.getElementById('btnPhotoText').innerText = "Agregar Otra Hoja";
     document.getElementById('addPhotoBtn').classList.remove('btn-primary');
     document.getElementById('addPhotoBtn').classList.add('btn-secondary');
 
@@ -381,15 +441,15 @@
     setProgress(25, `Analizando ${fotosAcumuladas.length} hoja(s)...`);
 
     try {
-      // Prompt logístico estricto: cercanía punto a punto y partición por vías de tren / zonas
       const prompt = `Analiza detalladamente todas las hojas de planilla adjuntas y extrae ABSOLUTAMENTE TODOS los paquetes listados.
 Consolida todo en una sola lista JSON válida.
 
-REGLAS ESTRICTAS DE ORDENAMIENTO LOGÍSTICO:
-1. NO ordenes por número de paquete correlativo.
-2. Agrupa primero por SECTORES GEOGRÁFICOS / LADOS DE LA VÍA DEL TREN (por ejemplo: entregar primero todo el lado Oeste/Sur de las vías y luego todo el lado Este/Norte, evitando cruzar las vías repetidas veces innecesariamente).
-3. Dentro de cada sector, encadena las entregas por estricta cercanía física (algoritmo del vecino más cercano: de parada 1 a la más cercana 2, luego a la más cercana 3, etc.).
-4. Marca "fueraDeZona": true si una dirección queda a más de 5 km del conglomerado principal.
+REGLAS ESTRICTAS DE LOGÍSTICA Y FILTRADO:
+1. DESDUPLICACIÓN: Si una misma dirección o número de paquete aparece más de una vez (por error de doble escaneo), consérvalo UNA SOLA VEZ.
+2. NO ordenes por número de paquete correlativo.
+3. Agrupa primero por SECTORES GEOGRÁFICOS / LADOS DE LA VÍA DEL TREN (entregar primero todo el lado Oeste/Sur de las vías y luego todo el lado Este/Norte).
+4. Dentro de cada sector, encadena las paradas por cercanía física estricta.
+5. Marca "fueraDeZona": true si una dirección queda a más de 5 km del lote principal.
 
 Estructura de salida JSON (arreglo de objetos):
 - "paquete": identificador o número (string)
@@ -429,7 +489,7 @@ Estructura de salida JSON (arreglo de objetos):
       if (!rawText) throw lastError || new Error("No se pudo procesar el lote.");
 
       const entregas = JSON.parse(rawText);
-      setProgress(100, "¡Ruta consolidada!");
+      setProgress(100, "Ruta consolidada");
       setTimeout(() => {
         document.getElementById('progressWrapper').style.display = 'none';
         configurarRuta(entregas);
@@ -443,10 +503,21 @@ Estructura de salida JSON (arreglo de objetos):
   }
 
   function configurarRuta(entregas) {
-    ruta = entregas.filter(e => !e.fueraDeZona);
-    const descartados = entregas.filter(e => e.fueraDeZona);
+    // Filtro estricto por si el modelo devolvió duplicados residuales
+    const vistos = new Set();
+    const unicos = [];
+    for (const e of entregas) {
+      const key = (e.paquete + '|' + e.direccion).toLowerCase().trim();
+      if (!vistos.has(key)) {
+        vistos.add(key);
+        unicos.push(e);
+      }
+    }
+
+    ruta = unicos.filter(e => !e.fueraDeZona);
+    const descartados = unicos.filter(e => e.fueraDeZona);
     currentIndex = 0;
-    entregadosCount = 0;
+    historialAcciones = [];
     proximidadAvisada = false;
     novedades = descartados.map(d => ({ ...d, motivo: "Fuera de zona (>5km)" }));
 
@@ -458,6 +529,7 @@ Estructura de salida JSON (arreglo de objetos):
       btnAll.style.display = 'inline-flex';
     }
 
+    guardarEstado();
     renderNovedades();
     actualizarVista();
   }
@@ -472,6 +544,8 @@ Estructura de salida JSON (arreglo de objetos):
         </div>
       `).join('');
       document.getElementById('issuesSection').style.display = 'block';
+    } else {
+      document.getElementById('issuesSection').style.display = 'none';
     }
   }
 
@@ -479,6 +553,10 @@ Estructura de salida JSON (arreglo de objetos):
     proximidadAvisada = false;
     const total = ruta.length;
     const restantes = total - currentIndex;
+    const entregadosCount = historialAcciones.filter(h => h.tipo === 'entregado').length;
+
+    // Mostrar u ocultar botón de deshacer
+    document.getElementById('btnUndo').style.display = (currentIndex > 0) ? 'inline-flex' : 'none';
 
     if (currentIndex >= total && total > 0) {
       document.getElementById('currentCard').innerHTML = '<div style="text-align:center; font-size:20px; font-weight:700; padding:15px;">Jornada finalizada. Todas las paradas completadas.</div>';
@@ -498,7 +576,6 @@ Estructura de salida JSON (arreglo de objetos):
     document.getElementById('sumEta').innerText = horaFin.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' hs';
 
     const cur = ruta[currentIndex];
-    // Solo numeral y número
     document.getElementById('curPkg').innerText = `#${cur.paquete}`;
     document.getElementById('curAddress').innerText = cur.direccion;
     document.getElementById('curName').innerText = cur.remitente;
@@ -528,8 +605,9 @@ Estructura de salida JSON (arreglo de objetos):
   }
 
   function marcarEntregado() {
-    entregadosCount++;
+    historialAcciones.push({ tipo: 'entregado', index: currentIndex });
     currentIndex++;
+    guardarEstado();
     actualizarVista();
   }
 
@@ -539,10 +617,29 @@ Estructura de salida JSON (arreglo de objetos):
     
     if (motivo !== null) {
       novedades.push({ ...cur, motivo: motivo });
+      historialAcciones.push({ tipo: 'no_entregado', index: currentIndex, paquete: cur.paquete });
       renderNovedades();
       currentIndex++;
+      guardarEstado();
       actualizarVista();
     }
+  }
+
+  function deshacerUltimo() {
+    if (historialAcciones.length === 0 || currentIndex === 0) return;
+
+    const ultimaAccion = historialAcciones.pop();
+    currentIndex--;
+
+    // Si la última acción fue un fallo, lo removemos de la lista de novedades
+    if (ultimaAccion.tipo === 'no_entregado') {
+      const idxNov = novedades.findIndex(n => n.paquete === ultimaAccion.paquete);
+      if (idxNov !== -1) novedades.splice(idxNov, 1);
+      renderNovedades();
+    }
+
+    guardarEstado();
+    actualizarVista();
   }
 
   function toBase64(file) {
