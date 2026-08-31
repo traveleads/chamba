@@ -52,7 +52,6 @@
     }
     .header h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
 
-    /* Botón discreto de reinicio manual */
     .btn-reset-header {
       background: transparent;
       border: 1px solid var(--border-subtle);
@@ -128,7 +127,6 @@
     .btn svg { width: 22px; height: 22px; fill: currentColor; }
     input[type="file"] { display: none; }
 
-    /* Contenedor de Proceso Dinámico */
     .progress-box {
       display: none;
       background: var(--card-bg);
@@ -252,7 +250,6 @@
     </button>
   </div>
 
-  <!-- Panel de progreso con pasos -->
   <div id="progressBox" class="progress-box">
     <div class="progress-header">
       <span id="progressTitle">Procesando planilla...</span>
@@ -264,7 +261,7 @@
     
     <div class="step-item" id="step1">
       <span class="step-icon">○</span>
-      <span>Optimizando y leyendo fotos...</span>
+      <span>Detectando ubicación de partida y leyendo fotos...</span>
     </div>
     <div class="step-item" id="step2">
       <span class="step-icon">○</span>
@@ -272,11 +269,11 @@
     </div>
     <div class="step-item" id="step3">
       <span class="step-icon">○</span>
-      <span>Separando por vías de tren y sectores...</span>
+      <span>Agrupando por localidades y cruces de vías...</span>
     </div>
     <div class="step-item" id="step4">
       <span class="step-icon">○</span>
-      <span>Trazando la ruta más corta punto a punto...</span>
+      <span>Conectando zonas por cercanía continua...</span>
     </div>
   </div>
 
@@ -290,7 +287,6 @@
     Ruta General en Maps
   </a>
 
-  <!-- Tarjeta Entrega Actual -->
   <div id="currentCard" class="card card-current" style="display: none;">
     <div class="delivery-badge">Próxima Parada</div>
     
@@ -339,7 +335,6 @@
   let currentIndex = 0;
   let historialAcciones = [];
   let novedades = [];
-  let proximidadAvisada = false;
   let fotosAcumuladas = [];
 
   function saveApiKey() {
@@ -459,6 +454,20 @@
     }
   }
 
+  function obtenerUbicacionActual() {
+    return new Promise((resolve) => {
+      if (!("geolocation" in navigator)) {
+        resolve(null);
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => resolve(null),
+        { timeout: 5000, enableHighAccuracy: true }
+      );
+    });
+  }
+
   function comprimirImagen(file) {
     return new Promise((resolve) => {
       const reader = new FileReader();
@@ -521,18 +530,32 @@
     if (fotosAcumuladas.length === 0) return;
 
     document.getElementById('scanControls').style.display = 'none';
-    updateStep(1, 20, "Optimizando fotos y leyendo datos...");
+    updateStep(1, 15, "Obteniendo punto de partida GPS...");
+
+    const coords = await obtenerUbicacionActual();
+    const gpsContext = coords 
+      ? `El repartidor se encuentra actualmente en las coordenadas GPS: (${coords.lat}, ${coords.lng}). LA PRIMERA PARADA DEBE SER LA MÁS CERCANA A ESTE PUNTO DE PARTIDA.`
+      : `Inicia la ruta por la localidad o grupo que tenga la mayor concentración de paquetes cercanos.`;
+
+    updateStep(1, 30, "Leyendo fotos y datos...");
 
     try {
       const prompt = `Analiza detalladamente todas las hojas de planilla adjuntas y extrae ABSOLUTAMENTE TODOS los paquetes listados.
 Consolida todo en una sola lista JSON válida.
 
-REGLAS ESTRICTAS DE LOGÍSTICA Y FILTRADO:
-1. DESDUPLICACIÓN: Si una misma dirección o número aparece más de una vez por error de doble foto, consérvalo UNA SOLA VEZ.
+UBICACIÓN DE INICIO:
+${gpsContext}
+
+LÓGICA DE OPTIMIZACIÓN POR BARRIDO TERRITORIAL (MUY ESTRICTA):
+1. DESDUPLICACIÓN: Si una misma dirección o número aparece repetido por doble foto, consérvalo una sola vez.
 2. NO ordenes por número correlativo.
-3. Agrupa primero por SECTORES GEOGRÁFICOS / LADOS DE LA VÍA DEL TREN (entregar primero todo el lado Oeste/Sur de las vías y luego todo el lado Este/Norte).
-4. Dentro de cada sector, encadena las paradas por cercanía física estricta.
-5. Marca "fueraDeZona": true si una dirección queda a más de 5 km del lote principal.
+3. BARRIDO POR ZONA / LOCALIDAD:
+   - Identifica la localidad/barrio más cercano al punto de inicio.
+   - ENTREGA PRIMERO TODAS las paradas de esa misma localidad antes de moverte a la siguiente. JAMÁS saltes a una parada aislada a 4 km si tienes 7 paradas a menos de 1 km en la zona actual.
+   - Si una localidad tiene vías de tren, termina primero un lado de la vía y luego el otro antes de cambiar de localidad.
+4. TRANSICIÓN ENTRE LOCALIDADES (PUENTE):
+   - La última parada de una localidad DEBE ser la que esté geográficamente más orientada hacia la próxima localidad a visitar, para que el viaje entre barrios sea fluido y sin retrocesos.
+5. Marca "fueraDeZona": true si una dirección queda a más de 5 km del conglomerado principal.
 
 Estructura de salida JSON (arreglo de objetos):
 - "paquete": identificador o número (string)
@@ -550,9 +573,9 @@ Estructura de salida JSON (arreglo de objetos):
       let rawText = null;
       let lastError = null;
 
-      setTimeout(() => updateStep(2, 45, "Extrayendo destinatarios y domicilios..."), 800);
-      setTimeout(() => updateStep(3, 70, "Separando sectores y cruces de vías..."), 1800);
-      setTimeout(() => updateStep(4, 90, "Trazando la ruta más corta..."), 2800);
+      setTimeout(() => updateStep(2, 50, "Extrayendo domicilios y agrupando por barrio..."), 800);
+      setTimeout(() => updateStep(3, 75, "Conectando zonas por barrido continuo..."), 1800);
+      setTimeout(() => updateStep(4, 90, "Finalizando trazado óptimo..."), 2800);
 
       for (const model of modelsToTry) {
         try {
@@ -607,7 +630,6 @@ Estructura de salida JSON (arreglo de objetos):
     const descartados = unicos.filter(e => e.fueraDeZona);
     currentIndex = 0;
     historialAcciones = [];
-    proximidadAvisada = false;
     novedades = descartados.map(d => ({ ...d, motivo: "Fuera de zona (>5km)" }));
 
     if (ruta.length > 0) {
@@ -639,7 +661,6 @@ Estructura de salida JSON (arreglo de objetos):
   }
 
   function actualizarVista() {
-    proximidadAvisada = false;
     const total = ruta.length;
     const restantes = total - currentIndex;
     const entregadosCount = historialAcciones.filter(h => h.tipo === 'entregado').length;
