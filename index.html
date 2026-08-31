@@ -10,13 +10,17 @@
       --card-bg: #FFFFFF;
       --text-main: #1C1C1E;
       --text-muted: #8E8E93;
-      --accent: #0A84FF;
-      --success: #30D158;
-      --warning: #FF9F0A;
-      --danger: #FF453A;
+      --accent: #007AFF;
+      --success: #34C759;
+      --warning: #FF9500;
+      --danger: #FF3B30;
       --border-subtle: rgba(0, 0, 0, 0.08);
       --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
       --btn-inner-light: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+      
+      /* Borde de la tarjeta foco en Modo Claro */
+      --card-focus-border: 2.5px solid #007AFF;
+      --card-focus-glow: 0 4px 16px rgba(0, 122, 255, 0.12);
     }
 
     @media (prefers-color-scheme: dark) {
@@ -26,12 +30,17 @@
         --text-main: #F2F2F7;
         --text-muted: #98989D;
         --accent: #0A84FF;
-        --success: #32D74B;
+        /* Verde más oscuro y apagado para no encandilar al volante de noche */
+        --success: #1E6B34;
         --warning: #FFD60A;
         --danger: #FF453A;
         --border-subtle: rgba(255, 255, 255, 0.12);
         --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
-        --btn-inner-light: inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        --btn-inner-light: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        
+        /* Borde Amarillo en Modo Oscuro */
+        --card-focus-border: 2.5px solid #FFD60A;
+        --card-focus-glow: 0 0 14px rgba(255, 214, 10, 0.25);
       }
     }
 
@@ -39,13 +48,7 @@
     body { background-color: var(--bg); color: var(--text-main); padding: 18px; padding-bottom: 50px; }
 
     .container { max-width: 480px; margin: 0 auto; }
-    
-    .header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 20px;
-    }
+    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
     .header h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
 
     .config-box { background: var(--card-bg); padding: 12px; border-radius: 14px; margin-bottom: 16px; border: 1px solid var(--border-subtle); }
@@ -58,6 +61,12 @@
       margin-bottom: 16px;
       border: 1px solid var(--border-subtle);
       box-shadow: var(--card-shadow);
+    }
+
+    /* Tarjeta foco con borde dinámico (Azul de día / Amarillo de noche) */
+    .card-current {
+      border: var(--card-focus-border);
+      box-shadow: var(--card-focus-glow);
     }
 
     .btn {
@@ -80,6 +89,7 @@
     .btn:active { transform: scale(0.98); filter: brightness(0.92); }
     
     .btn-primary { background: var(--accent); color: #FFFFFF; }
+    .btn-secondary { background: rgba(10, 132, 255, 0.15); color: var(--accent); box-shadow: none; border: 1px dashed var(--accent); }
     .btn-success { background: var(--success); color: #FFFFFF; }
     .btn-maps { background: #5856D6; color: #FFFFFF; }
     .btn-outline-danger {
@@ -91,6 +101,7 @@
     .btn svg { width: 22px; height: 22px; fill: currentColor; }
     input[type="file"] { display: none; }
 
+    /* Barra de Progreso */
     .progress-bar-container {
       display: none;
       background: var(--card-bg);
@@ -103,6 +114,18 @@
     .progress-track { width: 100%; height: 8px; background: var(--border-subtle); border-radius: 4px; overflow: hidden; margin-top: 10px; }
     .progress-fill { width: 0%; height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.3s ease; }
     .progress-label { font-size: 14px; font-weight: 600; color: var(--accent); }
+
+    .scan-status {
+      display: none;
+      background: rgba(10, 132, 255, 0.12);
+      color: var(--accent);
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 12px;
+    }
 
     .summary-strip {
       display: none;
@@ -130,8 +153,18 @@
       letter-spacing: 0.5px;
       margin-bottom: 8px;
     }
-    .pkg-title { font-size: 38px; font-weight: 800; letter-spacing: -1px; color: var(--text-main); margin-bottom: 4px; }
-    .address-title { font-size: 21px; font-weight: 700; line-height: 1.25; margin-bottom: 4px; color: var(--text-main); }
+
+    /* Número de paquete con ícono de caja sin la palabra "paquete" */
+    .pkg-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .pkg-icon { width: 32px; height: 32px; fill: var(--accent); }
+    .pkg-title { font-size: 44px; font-weight: 800; letter-spacing: -1.5px; color: var(--text-main); }
+
+    .address-title { font-size: 22px; font-weight: 700; line-height: 1.25; margin-bottom: 4px; color: var(--text-main); }
     .receiver-name { font-size: 16px; color: var(--text-muted); margin-bottom: 20px; font-weight: 500; }
 
     .section-title { font-size: 15px; font-weight: 600; color: var(--text-muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -143,7 +176,7 @@
       border-bottom: 1px solid var(--border-subtle);
     }
     .stop-row:last-child { border-bottom: none; }
-    .stop-num { font-weight: 700; font-size: 16px; min-width: 50px; color: var(--text-muted); }
+    .stop-num { font-weight: 800; font-size: 17px; min-width: 48px; color: var(--accent); }
     .stop-info { flex: 1; }
     .stop-addr { font-weight: 600; font-size: 15px; }
     .stop-person { font-size: 13px; color: var(--text-muted); }
@@ -160,11 +193,20 @@
     <input type="password" id="apiKeyInput" placeholder="Pegar Gemini API Key aquí" onchange="saveApiKey()" />
   </div>
 
-  <label class="btn btn-primary" id="uploadLabel">
-    <svg viewBox="0 0 24 24"><path d="M4 4h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm8 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/></svg>
-    Escanear Planilla Completa
-    <input type="file" accept="image/*" capture="environment" onchange="procesarFoto(event)" />
-  </label>
+  <div id="scanControls">
+    <div id="scanStatus" class="scan-status">📄 0 hojas listas</div>
+
+    <label class="btn btn-primary" id="addPhotoBtn">
+      <svg viewBox="0 0 24 24"><path d="M4 4h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm8 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/></svg>
+      <span id="btnPhotoText">📷 Tomar Foto a la Hoja</span>
+      <input type="file" accept="image/*" capture="environment" onchange="agregarHoja(event)" />
+    </label>
+
+    <button class="btn btn-success" id="btnProcessAll" style="display: none;" onclick="procesarTodasLasHojas()">
+      <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+      🚀 Armar Ruta Óptima
+    </button>
+  </div>
 
   <div id="progressWrapper" class="progress-bar-container">
     <div id="progressLabel" class="progress-label">Iniciando lectura...</div>
@@ -183,9 +225,16 @@
     Ruta General en Maps
   </a>
 
-  <div id="currentCard" class="card" style="display: none;">
+  <!-- Tarjeta Entrega Actual (Borde Azul de día / Amarillo de noche) -->
+  <div id="currentCard" class="card card-current" style="display: none;">
     <div class="delivery-badge">Próxima Parada</div>
-    <div class="pkg-title" id="curPkg">#--</div>
+    
+    <div class="pkg-row">
+      <!-- Ícono de Caja SVG -->
+      <svg class="pkg-icon" viewBox="0 0 24 24"><path d="M21 16.5l-9 5.25-9-5.25V7.5L12 2.25l9 5.25v9zM12 4.15L5.04 8.2 12 12.25l6.96-4.05L12 4.15zM4.5 9.87v5.76L11.25 19.5v-5.76L4.5 9.87zm15 0l-6.75 3.87v5.76L19.5 15.63V9.87z"/></svg>
+      <div class="pkg-title" id="curPkg">#--</div>
+    </div>
+
     <div class="address-title" id="curAddress">--</div>
     <div class="receiver-name" id="curName">--</div>
 
@@ -222,6 +271,7 @@
   let entregadosCount = 0;
   let novedades = [];
   let proximidadAvisada = false;
+  let fotosAcumuladas = [];
 
   function saveApiKey() {
     const val = document.getElementById('apiKeyInput').value.trim();
@@ -267,7 +317,6 @@
     }
   }
 
-  // Rastreo GPS en tiempo real para avisar 200m antes
   function iniciarGPSProximidad() {
     if ("geolocation" in navigator) {
       navigator.geolocation.watchPosition(async (pos) => {
@@ -278,9 +327,9 @@
         const distMetros = calcularDistanciaMetros(pos.coords.latitude, pos.coords.longitude, cur.lat, cur.lng);
         if (distMetros <= 250 && !proximidadAvisada) {
           proximidadAvisada = true;
-          hablar(`Atención. A doscientos metros de la entrega del paquete número ${cur.paquete}.`);
+          hablar(`Atención. A doscientos metros del paquete ${cur.paquete}.`);
         }
-      }, (err) => console.warn("GPS pasivo no disponible:", err), { enableHighAccuracy: true });
+      }, (err) => console.warn("GPS pasivo:", err), { enableHighAccuracy: true });
     }
   }
 
@@ -297,64 +346,70 @@
     return R * c;
   }
 
-  async function procesarFoto(event) {
+  async function agregarHoja(event) {
     const file = event.target.files[0];
     if (!file) return;
 
+    const base64Image = await toBase64(file);
+    const cleanedBase64 = base64Image.split(',')[1];
+    const mimeType = file.type || 'image/jpeg';
+
+    fotosAcumuladas.push({ inlineData: { mimeType, data: cleanedBase64 } });
+
+    const scanStatus = document.getElementById('scanStatus');
+    scanStatus.innerText = `📄 ${fotosAcumuladas.length} hoja(s) agregada(s) al lote`;
+    scanStatus.style.display = 'block';
+
+    document.getElementById('btnPhotoText').innerText = "📷 Agregar Otra Hoja";
+    document.getElementById('addPhotoBtn').classList.remove('btn-primary');
+    document.getElementById('addPhotoBtn').classList.add('btn-secondary');
+
+    document.getElementById('btnProcessAll').style.display = 'inline-flex';
+    event.target.value = "";
+  }
+
+  async function procesarTodasLasHojas() {
     const apiKey = localStorage.getItem('gemini_api_key');
     if (!apiKey) {
       alert("Por favor carga tu API Key primero.");
       return;
     }
 
-    document.getElementById('uploadLabel').style.display = 'none';
-    setProgress(20, "Escaneando planilla...");
+    if (fotosAcumuladas.length === 0) return;
+
+    document.getElementById('scanControls').style.display = 'none';
+    setProgress(25, `Analizando ${fotosAcumuladas.length} hoja(s)...`);
 
     try {
-      const base64Image = await toBase64(file);
-      const cleanedBase64 = base64Image.split(',')[1];
-      const mimeType = file.type || 'image/jpeg';
+      // Prompt logístico estricto: cercanía punto a punto y partición por vías de tren / zonas
+      const prompt = `Analiza detalladamente todas las hojas de planilla adjuntas y extrae ABSOLUTAMENTE TODOS los paquetes listados.
+Consolida todo en una sola lista JSON válida.
 
-      setProgress(45, "Leyendo direcciones...");
+REGLAS ESTRICTAS DE ORDENAMIENTO LOGÍSTICO:
+1. NO ordenes por número de paquete correlativo.
+2. Agrupa primero por SECTORES GEOGRÁFICOS / LADOS DE LA VÍA DEL TREN (por ejemplo: entregar primero todo el lado Oeste/Sur de las vías y luego todo el lado Este/Norte, evitando cruzar las vías repetidas veces innecesariamente).
+3. Dentro de cada sector, encadena las entregas por estricta cercanía física (algoritmo del vecino más cercano: de parada 1 a la más cercana 2, luego a la más cercana 3, etc.).
+4. Marca "fueraDeZona": true si una dirección queda a más de 5 km del conglomerado principal.
 
-      const prompt = `Analiza detalladamente esta planilla de reparto y extrae ABSOLUTAMENTE TODOS los paquetes o filas listadas. No omitas ninguno.
-Devuelve un arreglo JSON válido donde cada elemento contenga:
-- "paquete": identificador o número del paquete (string)
-- "remitente": nombre y apellido de la persona
+Estructura de salida JSON (arreglo de objetos):
+- "paquete": identificador o número (string)
+- "remitente": nombre y apellido
 - "direccion": calle, altura y localidad completa
-- "fueraDeZona": booleano (true si la dirección queda a más de 5 km o totalmente aislada del lote principal).
+- "fueraDeZona": booleano`;
 
-Ordena los paquetes válidos creando la secuencia de entrega más corta y lógica por calles y cercanía.`;
-
+      const parts = [{ text: prompt }, ...fotosAcumuladas];
       const requestBody = {
-        contents: [{
-          parts: [
-            { text: prompt },
-            { 
-              inlineData: { 
-                mimeType: mimeType, 
-                data: cleanedBase64 
-              } 
-            }
-          ]
-        }],
+        contents: [{ parts }],
         generationConfig: { responseMimeType: "application/json" }
       };
 
-      // Modelos ordenados por prioridad de velocidad y redundancia
-      const modelsToTry = [
-        "gemini-2.5-flash",
-        "gemini-3.6-flash",
-        "gemini-flash-latest",
-        "gemini-1.5-flash"
-      ];
-
+      const modelsToTry = ["gemini-3.6-flash", "gemini-2.5-flash", "gemini-flash-latest"];
       let rawText = null;
       let lastError = null;
 
       for (const model of modelsToTry) {
         try {
-          setProgress(70, `Optimizando recorrido...`);
+          setProgress(70, `Optimizando por cercanía y sectores...`);
           const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -367,15 +422,14 @@ Ordena los paquetes válidos creando la secuencia de entrega más corta y lógic
             break;
           }
         } catch (err) {
-          console.warn(`Reintentando con modelo de respaldo debido a: ${err.message}`);
           lastError = err;
         }
       }
 
-      if (!rawText) throw lastError || new Error("No se pudo procesar la imagen.");
+      if (!rawText) throw lastError || new Error("No se pudo procesar el lote.");
 
       const entregas = JSON.parse(rawText);
-      setProgress(100, "¡Ruta lista!");
+      setProgress(100, "¡Ruta consolidada!");
       setTimeout(() => {
         document.getElementById('progressWrapper').style.display = 'none';
         configurarRuta(entregas);
@@ -384,7 +438,7 @@ Ordena los paquetes válidos creando la secuencia de entrega más corta y lógic
     } catch (err) {
       alert("Aviso: " + err.message);
       document.getElementById('progressWrapper').style.display = 'none';
-      document.getElementById('uploadLabel').style.display = 'inline-flex';
+      document.getElementById('scanControls').style.display = 'block';
     }
   }
 
@@ -444,6 +498,7 @@ Ordena los paquetes válidos creando la secuencia de entrega más corta y lógic
     document.getElementById('sumEta').innerText = horaFin.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' hs';
 
     const cur = ruta[currentIndex];
+    // Solo numeral y número
     document.getElementById('curPkg').innerText = `#${cur.paquete}`;
     document.getElementById('curAddress').innerText = cur.direccion;
     document.getElementById('curName').innerText = cur.remitente;
@@ -469,7 +524,7 @@ Ordena los paquetes válidos creando la secuencia de entrega más corta y lógic
       document.getElementById('nextSection').style.display = 'none';
     }
 
-    hablar(`Próxima parada, paquete ${cur.paquete}. En ${cur.direccion}`);
+    hablar(`Próxima parada, número ${cur.paquete}. En ${cur.direccion}`);
   }
 
   function marcarEntregado() {
