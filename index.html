@@ -67,7 +67,7 @@
       background: var(--card-bg);
       border: 1px solid var(--border-subtle);
       color: var(--text-main);
-      border-radius: 12px;
+      border-radius: 14px;
       width: 42px;
       height: 42px;
       display: none;
@@ -82,7 +82,7 @@
 
     .welcome-card {
       background: var(--card-bg);
-      border-radius: 20px;
+      border-radius: 22px;
       padding: 24px 20px;
       margin-bottom: 18px;
       border: 1px solid var(--border-subtle);
@@ -99,12 +99,12 @@
     .welcome-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
     .welcome-subtitle { font-size: 14px; color: var(--text-muted); line-height: 1.4; }
 
-    .config-box { background: var(--card-bg); padding: 12px; border-radius: 14px; margin-bottom: 16px; border: 1px solid var(--border-subtle); }
-    .config-box input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border-subtle); font-size: 15px; outline: none; background: transparent; color: var(--text-main); }
+    .config-box { background: var(--card-bg); padding: 12px; border-radius: 16px; margin-bottom: 16px; border: 1px solid var(--border-subtle); }
+    .config-box input { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-subtle); font-size: 15px; outline: none; background: transparent; color: var(--text-main); }
 
     .card {
       background: var(--card-bg);
-      border-radius: 20px;
+      border-radius: 22px;
       padding: 22px;
       margin-bottom: 16px;
       border: 1px solid var(--border-subtle);
@@ -147,7 +147,6 @@
     .btn-secondary { background: rgba(10, 132, 255, 0.15); color: var(--accent); box-shadow: none; border: 1px dashed var(--accent); }
     .btn-maps-main { background: var(--maps-color); color: #FFFFFF; }
 
-    /* Botones de acción neutros integrados */
     .btn-action-neutral {
       background: var(--card-bg);
       color: var(--text-main);
@@ -172,6 +171,7 @@
       font-size: 15px;
       margin-top: 4px;
       margin-bottom: 16px;
+      border-radius: 14px;
     }
 
     .btn svg { width: 22px; height: 22px; fill: currentColor; }
@@ -182,7 +182,7 @@
       display: none;
       background: var(--card-bg);
       padding: 22px;
-      border-radius: 20px;
+      border-radius: 22px;
       margin-bottom: 16px;
       border: 1px solid var(--border-subtle);
       box-shadow: var(--card-shadow);
@@ -235,7 +235,7 @@
       display: none;
       position: relative;
       background: var(--card-bg);
-      border-radius: 16px;
+      border-radius: 18px;
       margin-bottom: 16px;
       border: 1px solid var(--border-subtle);
       box-shadow: var(--card-shadow);
@@ -330,6 +330,7 @@
       margin-left: 6px;
     }
 
+    /* Modales */
     .modal-overlay {
       display: none;
       position: fixed;
@@ -477,12 +478,12 @@
     <div id="liveProgressBar" class="live-progress-bar"></div>
   </div>
 
-  <!-- Botón Recorrido con Ícono de Camión de Envíos / Delivery -->
+  <!-- Botón Ver recorrido con Flecha Curva de Ruta -->
   <a id="btnAllMaps" class="btn btn-maps-main" target="_blank" style="display: none;">
     <svg viewBox="0 0 24 24">
-      <path d="M20 8h-3V4H3a1 1 0 0 0-1 1v11a2 2 0 0 0 2 2h1a3 3 0 0 0 6 0h4a3 3 0 0 0 6 0h1a1 1 0 0 0 1-1v-5l-3-4zm-2 2.5l1.88 2.5H17v-2.5h1zM6 19a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm10 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/>
+      <path d="M11.5 8c2.65 0 5.05.99 6.9 2.6L22 7v9h-9l3.62-3.62C15.23 11.22 13.46 10.5 11.5 10.5c-3.54 0-6.55 2.31-7.6 5.5L1.53 15.22C2.92 11.03 6.85 8 11.5 8z"/>
     </svg>
-    Recorrido
+    Ver recorrido
   </a>
 
   <!-- Tarjeta Entrega Actual -->
@@ -508,7 +509,6 @@
     <div class="address-title" id="curAddress">--</div>
     <div class="receiver-name" id="curName">--</div>
 
-    <!-- Botón Ver en Maps integrado al diseño neutro -->
     <a id="btnMaps" class="btn btn-action-neutral" target="_blank">
       <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
       Ver en Maps
@@ -535,7 +535,6 @@
     <div id="queueList"></div>
   </div>
 
-  <!-- Tarjeta de Novedades y Descartados -->
   <div id="issuesSection" class="card" style="display: none; border-color: rgba(255, 69, 58, 0.3);">
     <div class="section-title" style="color: var(--danger);">Novedades / Descartados</div>
     <div id="issuesList" style="font-size: 14px; line-height: 1.5;"></div>
