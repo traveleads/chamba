@@ -28,7 +28,7 @@
       --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
       --btn-inner-light: inset 0 1px 0 rgba(255, 255, 255, 0.25);
       --card-focus-border: 2.5px solid var(--maps-color);
-      --card-focus-glow: 0 6px 20px rgba(88, 86, 214, 0.18);
+      --card-focus-glow: 0 6px 22px rgba(88, 86, 214, 0.28);
     }
 
     @media (prefers-color-scheme: dark) {
@@ -46,7 +46,7 @@
         --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
         --btn-inner-light: inset 0 1px 0 rgba(255, 255, 255, 0.1);
         --card-focus-border: 2.5px solid var(--maps-color);
-        --card-focus-glow: 0 0 18px rgba(94, 92, 230, 0.35);
+        --card-focus-glow: 0 0 22px rgba(94, 92, 230, 0.45);
       }
     }
 
@@ -114,14 +114,16 @@
       transition: border-color 0.3s ease, box-shadow 0.3s ease;
     }
 
+    /* Brillo y resplandor calibrado en Violeta */
     .card-current {
       border: var(--card-focus-border);
       box-shadow: var(--card-focus-glow);
     }
 
+    /* Brillo y resplandor en Ámbar (+5km) */
     .card-optional {
       border: 2.5px solid var(--warning) !important;
-      box-shadow: 0 6px 20px rgba(255, 149, 0, 0.22) !important;
+      box-shadow: 0 6px 22px rgba(255, 149, 0, 0.28) !important;
     }
 
     .btn {
@@ -547,7 +549,7 @@
       <span style="font-size: 22px;">📄</span>
       <div>
         <strong>Agregar más hojas</strong>
-        <div style="font-size: 13px; color: var(--text-muted); font-weight: normal;">Suma paquetes nuevos a la ruta actual</div>
+        <div style="font-size: 13px; color: var(--text-muted); font-weight: normal;">Suma paquetes nuevos y re-traza la mejor ruta</div>
       </div>
     </button>
 
@@ -563,7 +565,7 @@
   </div>
 </div>
 
-<!-- Modal 2: Motivos de No Entrega con opción de Fuera de Zona -->
+<!-- Modal 2: Motivos de No Entrega -->
 <div id="modalNoEntrega" class="modal-overlay">
   <div class="modal-card">
     <div class="modal-title">⚠️ Reportar Inconveniente</div>
@@ -854,10 +856,12 @@
     }
   }
 
+  // Genera el enlace de Google Maps multi-parada con los destinos pendientes
   function actualizarBotonRutaMaps() {
     const btnAll = document.getElementById('btnAllMaps');
-    if (ruta.length > 0) {
-      const stops = ruta.slice(0, 9).map(r => encodeURIComponent(r.direccionBusqueda || r.direccion));
+    if (ruta.length > 0 && currentIndex < ruta.length) {
+      const pendientes = ruta.slice(currentIndex, currentIndex + 9);
+      const stops = pendientes.map(r => encodeURIComponent(r.direccionBusqueda || r.direccion));
       const origin = userCoords ? `${userCoords.lat},${userCoords.lng}` : stops[0];
       const destinations = userCoords ? stops : stops.slice(1);
       
@@ -1018,6 +1022,52 @@
     return str || "1";
   }
 
+  // Algoritmo TSP: Ordena un lote de puntos conectando el vecino más cercano
+  function ordenarPorVecinoMasCercano(listaPuntos, puntoInicio) {
+    let ordenados = [];
+    let noVisitados = [...listaPuntos];
+    let currentPos = puntoInicio;
+
+    while (noVisitados.length > 0) {
+      if (!currentPos) {
+        ordenados.push(noVisitados.shift());
+        currentPos = ordenados[ordenados.length - 1];
+        continue;
+      }
+
+      let bestIndex = 0;
+      let bestDistance = Infinity;
+
+      noVisitados.forEach((item, index) => {
+        if (item.lat !== null && item.lng !== null && currentPos.lat !== null && currentPos.lng !== null) {
+          const d = calcularDistanciaKm(currentPos.lat, currentPos.lng, item.lat, item.lng);
+          if (d < bestDistance) {
+            bestDistance = d;
+            bestIndex = index;
+          }
+        } else {
+          const locA = (item.localidad || '').toLowerCase();
+          const locCur = (currentPos.localidad || '').toLowerCase();
+          if (locA && locCur && locA === locCur && bestDistance === Infinity) {
+            bestIndex = index;
+          }
+        }
+      });
+
+      const proximo = noVisitados.splice(bestIndex, 1)[0];
+      
+      // Si el salto supera los 5 km, se marca como opcional
+      if (bestDistance > 5.0 && bestDistance !== Infinity) {
+        proximo.esOpcional = true;
+      }
+
+      ordenados.push(proximo);
+      currentPos = proximo;
+    }
+
+    return ordenados;
+  }
+
   async function procesarTodasLasHojas() {
     desbloquearVoz();
 
@@ -1098,7 +1148,15 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
       updateStep(2, 60, "Geolocalizando e identificando opcionales...");
 
       const vistos = new Set();
-      const puntos = [];
+      // Si estamos en modo anexo, registramos las ya existentes para evitar duplicados
+      if (modoAnexo) {
+        ruta.forEach(r => {
+          const key = (sanitizarNumeroPaquete(r.paquete) + '|' + r.direccion).toLowerCase();
+          vistos.add(key);
+        });
+      }
+
+      const puntosNuevos = [];
 
       for (const e of entregasCrudas) {
         const cleanPkg = sanitizarNumeroPaquete(e.paquete);
@@ -1118,8 +1176,8 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
 
         if (!vistos.has(key) && calleCompleta.length > 2) {
           vistos.add(key);
-          puntos.push({
-            paquete: cleanPkg || (puntos.length + 1).toString(),
+          puntosNuevos.push({
+            paquete: cleanPkg || (puntosNuevos.length + 1).toString(),
             remitente: String(e.remitente || 'Destinatario').trim(),
             direccion: fullAddress,
             direccionBusqueda: direccionGps,
@@ -1131,7 +1189,7 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
         }
       }
 
-      await Promise.all(puntos.map(async (p) => {
+      await Promise.all(puntosNuevos.map(async (p) => {
         const coords = await geocodificarDireccion(p.direccionBusqueda);
         if (coords) {
           p.lat = coords.lat;
@@ -1139,46 +1197,26 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
         }
       }));
 
-      updateStep(3, 85, "Armando secuencia continua por cercanía...");
+      updateStep(3, 85, "Re-optimizando el recorrido continuo...");
 
-      let rutaOrdenada = [];
-      let noVisitados = [...puntos];
-      let currentPos = userCoords;
+      let rutaFinal = [];
 
-      while (noVisitados.length > 0) {
-        if (!currentPos) {
-          rutaOrdenada.push(noVisitados.shift());
-          currentPos = rutaOrdenada[rutaOrdenada.length - 1];
-          continue;
-        }
+      if (modoAnexo && ruta.length > 0) {
+        // En anexo: conservamos entregados, y re-ruteamos pendientes + nuevos
+        const yaEntregados = ruta.slice(0, currentIndex);
+        const paradaActual = ruta[currentIndex] || userCoords;
+        const pendientesPrevios = ruta.slice(currentIndex);
 
-        let bestIndex = 0;
-        let bestDistance = Infinity;
+        const bolsaPendientes = [...pendientesPrevios, ...puntosNuevos];
+        const pendientesReordenados = ordenarPorVecinoMasCercano(bolsaPendientes, paradaActual);
 
-        noVisitados.forEach((item, index) => {
-          if (item.lat !== null && item.lng !== null && currentPos.lat !== null && currentPos.lng !== null) {
-            const d = calcularDistanciaKm(currentPos.lat, currentPos.lng, item.lat, item.lng);
-            if (d < bestDistance) {
-              bestDistance = d;
-              bestIndex = index;
-            }
-          } else {
-            const locA = (item.localidad || '').toLowerCase();
-            const locCur = (currentPos.localidad || '').toLowerCase();
-            if (locA && locCur && locA === locCur && bestDistance === Infinity) {
-              bestIndex = index;
-            }
-          }
-        });
-
-        const proximo = noVisitados.splice(bestIndex, 1)[0];
-        
-        if (bestDistance > 5.0 && bestDistance !== Infinity) {
-          proximo.esOpcional = true;
-        }
-
-        rutaOrdenada.push(proximo);
-        currentPos = proximo;
+        rutaFinal = [...yaEntregados, ...pendientesReordenados];
+        modoAnexo = false;
+      } else {
+        // Jornada nueva desde cero
+        rutaFinal = ordenarPorVecinoMasCercano(puntosNuevos, userCoords);
+        currentIndex = 0;
+        historialAcciones = [];
       }
 
       updateStep(3, 100, "Ruta lista");
@@ -1187,7 +1225,7 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
       setTimeout(() => {
         document.getElementById('progressBox').style.display = 'none';
         document.getElementById('btnOptionsDots').style.display = 'inline-flex';
-        configurarRuta(rutaOrdenada);
+        configurarRuta(rutaFinal);
       }, 400);
 
     } catch (err) {
@@ -1198,16 +1236,7 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
   }
 
   function configurarRuta(rutaOptimizada) {
-    if (modoAnexo && ruta.length > 0) {
-      const yaEntregados = ruta.slice(0, currentIndex);
-      const pendientes = ruta.slice(currentIndex);
-      ruta = [...yaEntregados, ...pendientes, ...rutaOptimizada];
-      modoAnexo = false;
-    } else {
-      ruta = rutaOptimizada;
-      currentIndex = 0;
-      historialAcciones = [];
-    }
+    ruta = rutaOptimizada;
 
     actualizarBotonRutaMaps();
     guardarEstado();
@@ -1215,10 +1244,10 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
     actualizarVista(false);
 
     if (ruta.length > 0) {
-      const primerPaquete = ruta[0].paquete;
+      const primerPaquete = ruta[currentIndex]?.paquete || ruta[0].paquete;
       const zonasDetectadas = new Set(ruta.map(r => r.localidad || 'Centro')).size;
       
-      hablarConRetraso(`Buenos días. Hoy tenemos ${ruta.length} repartos en ${zonasDetectadas} distritos. El primero es el paquete número ${primerPaquete} en ${ruta[0].direccion}.`, 600);
+      hablarConRetraso(`Recorrido listo. Tenemos ${ruta.length} repartos en ${zonasDetectadas} distritos. La próxima entrega es el paquete número ${primerPaquete}.`, 600);
     }
   }
 
@@ -1270,6 +1299,7 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
     const badgeEl = document.getElementById('curBadge');
     const btnMapsEl = document.getElementById('btnMaps');
 
+    // Estado visual: normal (violeta) vs opcional (ámbar)
     if (cur.esOpcional) {
       cardEl.className = 'card card-current card-optional';
       badgeEl.className = 'delivery-badge badge-optional';
