@@ -146,33 +146,8 @@
     .btn-primary { background: var(--accent); color: #FFFFFF; }
     .btn-secondary { background: rgba(10, 132, 255, 0.15); color: var(--accent); box-shadow: none; border: 1px dashed var(--accent); }
     .btn-maps-main { background: var(--maps-color); color: #FFFFFF; }
-    
-    /* Botón Ver en Maps estilizado y liviano dentro de la tarjeta */
-    .btn-maps-subtle {
-      background: rgba(88, 86, 214, 0.1);
-      color: var(--maps-color);
-      border: 1.5px solid rgba(88, 86, 214, 0.35);
-      box-shadow: none;
-      font-weight: 600;
-      padding: 14px;
-    }
-    .btn-maps-subtle:active {
-      background: var(--maps-color);
-      color: #FFFFFF;
-    }
 
-    /* Variante cuando la parada es Opcional */
-    .btn-maps-subtle-opt {
-      background: rgba(255, 149, 0, 0.12);
-      color: #B36B00;
-      border: 1.5px solid rgba(255, 149, 0, 0.45);
-    }
-    @media (prefers-color-scheme: dark) {
-      .btn-maps-subtle-opt {
-        color: #FFD60A;
-      }
-    }
-
+    /* Botones de acción neutros integrados */
     .btn-action-neutral {
       background: var(--card-bg);
       color: var(--text-main);
@@ -355,7 +330,6 @@
       margin-left: 6px;
     }
 
-    /* Modales */
     .modal-overlay {
       display: none;
       position: fixed;
@@ -503,9 +477,11 @@
     <div id="liveProgressBar" class="live-progress-bar"></div>
   </div>
 
-  <!-- Botón Recorrido (Ruta General) -->
+  <!-- Botón Recorrido con Ícono de Camión de Envíos / Delivery -->
   <a id="btnAllMaps" class="btn btn-maps-main" target="_blank" style="display: none;">
-    <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
+    <svg viewBox="0 0 24 24">
+      <path d="M20 8h-3V4H3a1 1 0 0 0-1 1v11a2 2 0 0 0 2 2h1a3 3 0 0 0 6 0h4a3 3 0 0 0 6 0h1a1 1 0 0 0 1-1v-5l-3-4zm-2 2.5l1.88 2.5H17v-2.5h1zM6 19a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm10 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/>
+    </svg>
     Recorrido
   </a>
 
@@ -532,8 +508,8 @@
     <div class="address-title" id="curAddress">--</div>
     <div class="receiver-name" id="curName">--</div>
 
-    <!-- Botón Ver en Maps liviano y equilibrado -->
-    <a id="btnMaps" class="btn btn-maps-subtle" target="_blank">
+    <!-- Botón Ver en Maps integrado al diseño neutro -->
+    <a id="btnMaps" class="btn btn-action-neutral" target="_blank">
       <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
       Ver en Maps
     </a>
@@ -1356,18 +1332,15 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
     const cur = ruta[currentIndex];
     const cardEl = document.getElementById('currentCard');
     const badgeEl = document.getElementById('curBadge');
-    const btnMapsEl = document.getElementById('btnMaps');
 
     if (cur.esOpcional) {
       cardEl.className = 'card card-current card-optional';
       badgeEl.className = 'delivery-badge badge-optional';
       badgeEl.innerText = 'Parada Opcional (+5 km)';
-      btnMapsEl.className = 'btn btn-maps-subtle btn-maps-subtle-opt';
     } else {
       cardEl.className = 'card card-current';
       badgeEl.className = 'delivery-badge';
       badgeEl.innerText = 'Próxima Parada';
-      btnMapsEl.className = 'btn btn-maps-subtle';
     }
     
     document.getElementById('curPkg').innerText = `#${cur.paquete}`;
@@ -1375,7 +1348,7 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
     document.getElementById('curName').innerText = cur.remitente;
 
     const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(cur.direccionBusqueda || cur.direccion)}`;
-    btnMapsEl.href = mapsUrl;
+    document.getElementById('btnMaps').href = mapsUrl;
     cardEl.style.display = 'block';
 
     const queueList = document.getElementById('queueList');
