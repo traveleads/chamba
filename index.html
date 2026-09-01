@@ -463,11 +463,11 @@
     </div>
     <div class="step-item" id="step2">
       <span class="step-icon" id="iconStep2">○</span>
-      <span>Geolocalizando e identificando opcionales (> 5 km)...</span>
+      <span>Agrupando sectores y detectando opcionales (> 5 km)...</span>
     </div>
     <div class="step-item" id="step3">
       <span class="step-icon" id="iconStep3">○</span>
-      <span>Optimizando recorrido continuo del furgón...</span>
+      <span>Optimizando secuencia continua por distritos...</span>
     </div>
   </div>
 
@@ -479,18 +479,13 @@
     <div id="liveProgressBar" class="live-progress-bar"></div>
   </div>
 
-  <!-- Botón Ver recorrido con Camión de Base Plana Proporcionado -->
+  <!-- Botón Ver recorrido -->
   <a id="btnAllMaps" class="btn btn-maps-main" target="_blank" style="display: none;">
     <svg viewBox="0 0 32 32">
-      <!-- Estelas de velocidad -->
       <path d="M2 9h4M1 14h6M3 19h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-      <!-- Caja de carga plana con esquinas superiores curvas -->
       <path d="M8 7h12a2 2 0 0 1 2 2v14H8a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z"/>
-      <!-- Cabina de camión -->
       <path d="M22 11h4a2 2 0 0 1 1.6.8l3 4.2c.3.4.4.9.4 1.4V22a1 1 0 0 1-1 1h-8v-11z"/>
-      <!-- Ventana de cabina -->
       <path d="M23 13h3.2l2 2.8H23v-2.8z" fill="#5856D6"/>
-      <!-- Ruedas integradas -->
       <circle cx="12" cy="23" r="3.2" fill="#1C1C1E" stroke="#FFFFFF" stroke-width="1.2"/>
       <circle cx="26" cy="23" r="3.2" fill="#1C1C1E" stroke="#FFFFFF" stroke-width="1.2"/>
     </svg>
@@ -887,6 +882,7 @@
     }
   }
 
+  // Entrega a Google Maps la ventana de las próximas 9 paradas del sector actual
   function actualizarBotonRutaMaps() {
     const btnAll = document.getElementById('btnAllMaps');
     if (ruta.length > 0 && currentIndex < ruta.length) {
@@ -1073,48 +1069,90 @@
     return a.replace(/\s+/g, ' ').trim();
   }
 
-  function ordenarPorVecinoMasCercano(listaPuntos, puntoInicio) {
-    let ordenados = [];
-    let noVisitados = [...listaPuntos];
-    let currentPos = puntoInicio;
+  /* ALGORITMO CLUSTER-FIRST, ROUTE-SECOND (Agrupa distritos y luego rutea continuo) */
+  function optimizarPorClustersYDistritos(listaPuntos, puntoInicio) {
+    if (!listaPuntos || listaPuntos.length === 0) return [];
 
-    while (noVisitados.length > 0) {
-      if (!currentPos) {
-        ordenados.push(noVisitados.shift());
-        currentPos = ordenados[ordenados.length - 1];
-        continue;
+    // 1. Agrupación por Localidad / Distrito
+    const grupos = {};
+    listaPuntos.forEach(p => {
+      const locKey = (p.localidad || 'Centro').trim().toLowerCase();
+      if (!grupos[locKey]) {
+        grupos[locKey] = {
+          nombre: p.localidad || 'Centro',
+          puntos: []
+        };
       }
+      grupos[locKey].puntos.push(p);
+    });
 
-      let bestIndex = 0;
-      let bestDistance = Infinity;
+    // 2. Cálculo de centroide por cada distrito
+    const clusters = Object.values(grupos).map(g => {
+      let latSum = 0, lngSum = 0, validos = 0;
+      g.puntos.forEach(pt => {
+        if (pt.lat !== null && pt.lng !== null) {
+          latSum += pt.lat;
+          lngSum += pt.lng;
+          validos++;
+        }
+      });
+      return {
+        ...g,
+        lat: validos > 0 ? (latSum / validos) : null,
+        lng: validos > 0 ? (lngSum / validos) : null
+      };
+    });
 
-      noVisitados.forEach((item, index) => {
-        if (item.lat !== null && item.lng !== null && currentPos.lat !== null && currentPos.lng !== null) {
-          const d = calcularDistanciaKm(currentPos.lat, currentPos.lng, item.lat, item.lng);
-          if (d < bestDistance) {
-            bestDistance = d;
-            bestIndex = index;
-          }
-        } else {
-          const locA = (item.localidad || '').toLowerCase();
-          const locCur = (currentPos.localidad || '').toLowerCase();
-          if (locA && locCur && locA === locCur && bestDistance === Infinity) {
-            bestIndex = index;
+    // 3. Encadenar distritos completos de forma continua
+    let rutaCompleta = [];
+    let clustersPendientes = [...clusters];
+    let posActual = puntoInicio;
+
+    while (clustersPendientes.length > 0) {
+      let bestClusterIdx = 0;
+      let minClusterDist = Infinity;
+
+      clustersPendientes.forEach((c, idx) => {
+        if (posActual && posActual.lat !== null && posActual.lng !== null && c.lat !== null && c.lng !== null) {
+          const d = calcularDistanciaKm(posActual.lat, posActual.lng, c.lat, c.lng);
+          if (d < minClusterDist) {
+            minClusterDist = d;
+            bestClusterIdx = idx;
           }
         }
       });
 
-      const proximo = noVisitados.splice(bestIndex, 1)[0];
+      const clusterActual = clustersPendientes.splice(bestClusterIdx, 1)[0];
       
-      if (bestDistance > 5.0 && bestDistance !== Infinity) {
-        proximo.esOpcional = true;
-      }
+      // 4. Resolver todas las entregas del distrito sin salir de él
+      let puntosDistrito = [...clusterActual.puntos];
+      while (puntosDistrito.length > 0) {
+        let bestPtIdx = 0;
+        let bestPtDist = Infinity;
 
-      ordenados.push(proximo);
-      currentPos = proximo;
+        puntosDistrito.forEach((pt, idx) => {
+          if (posActual && posActual.lat !== null && posActual.lng !== null && pt.lat !== null && pt.lng !== null) {
+            const d = calcularDistanciaKm(posActual.lat, posActual.lng, pt.lat, pt.lng);
+            if (d < bestPtDist) {
+              bestPtDist = d;
+              bestPtIdx = idx;
+            }
+          }
+        });
+
+        const proximo = puntosDistrito.splice(bestPtIdx, 1)[0];
+        
+        // Marcado de opcional si el salto supera los 5 km
+        if (bestPtDist > 5.0 && bestPtDist !== Infinity) {
+          proximo.esOpcional = true;
+        }
+
+        rutaCompleta.push(proximo);
+        posActual = proximo;
+      }
     }
 
-    return ordenados;
+    return rutaCompleta;
   }
 
   async function procesarTodasLasHojas() {
@@ -1194,7 +1232,7 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
 
       const entregasCrudas = JSON.parse(rawText);
 
-      updateStep(2, 60, "Geolocalizando e identificando opcionales...");
+      updateStep(2, 60, "Agrupando sectores y geolocalizando...");
 
       const vistos = new Set();
       if (modoAnexo) {
@@ -1245,7 +1283,7 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
         }
       }));
 
-      updateStep(3, 85, "Re-optimizando el recorrido continuo...");
+      updateStep(3, 85, "Armando recorrido continuo por sectores...");
 
       let rutaFinal = [];
 
@@ -1255,12 +1293,12 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
         const pendientesPrevios = ruta.slice(currentIndex);
 
         const bolsaPendientes = [...pendientesPrevios, ...puntosNuevos];
-        const pendientesReordenados = ordenarPorVecinoMasCercano(bolsaPendientes, paradaActual);
+        const pendientesReordenados = optimizarPorClustersYDistritos(bolsaPendientes, paradaActual);
 
         rutaFinal = [...yaEntregados, ...pendientesReordenados];
         modoAnexo = false;
       } else {
-        rutaFinal = ordenarPorVecinoMasCercano(puntosNuevos, userCoords);
+        rutaFinal = optimizarPorClustersYDistritos(puntosNuevos, userCoords);
         currentIndex = 0;
         historialAcciones = [];
       }
@@ -1293,7 +1331,7 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
       const primerPaquete = ruta[currentIndex]?.paquete || ruta[0].paquete;
       const zonasDetectadas = new Set(ruta.map(r => r.localidad || 'Centro')).size;
       
-      hablarConRetraso(`Recorrido listo. Tenemos ${ruta.length} repartos en ${zonasDetectadas} distritos. La próxima entrega es el paquete número ${primerPaquete}.`, 600);
+      hablarConRetraso(`Recorrido listo. Tenemos ${ruta.length} repartos en ${zonasDetectadas} distritos. La primera entrega es el paquete número ${primerPaquete}.`, 600);
     }
   }
 
