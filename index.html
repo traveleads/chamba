@@ -175,7 +175,7 @@
     }
 
     .btn svg { width: 22px; height: 22px; fill: currentColor; }
-    .btn-maps-main svg { width: 28px; height: 28px; }
+    .btn-maps-main svg { width: 30px; height: 30px; }
     .icon-danger { fill: var(--danger) !important; transition: fill 0.2s ease; }
     input[type="file"] { display: none; }
 
@@ -246,17 +246,17 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 14px 18px;
-      font-size: 14px;
-      font-weight: 500;
+      padding: 16px 20px;
+      font-size: 16px;
+      font-weight: 600;
     }
-    .summary-content strong { color: var(--maps-color); font-weight: 700; }
+    .summary-content strong { color: #FF9500; font-size: 18px; font-weight: 800; }
     .live-progress-bar {
       position: absolute;
       bottom: 0;
       left: 0;
-      height: 4px;
-      background: var(--success);
+      height: 5px;
+      background: #FF9500;
       width: 0%;
       transition: width 0.4s ease;
     }
@@ -479,22 +479,21 @@
     <div id="liveProgressBar" class="live-progress-bar"></div>
   </div>
 
-  <!-- Botón Ver recorrido con Camión de Envíos Rápidos Vectorizado -->
+  <!-- Botón Ver recorrido con base plana recta y ruedas visibles -->
   <a id="btnAllMaps" class="btn btn-maps-main" target="_blank" style="display: none;">
     <svg viewBox="0 0 100 100">
       <!-- Estelas de velocidad redondeadas -->
-      <rect x="5" y="24" width="22" height="6" rx="3" fill="#FFFFFF"/>
-      <rect x="10" y="38" width="18" height="6" rx="3" fill="#FFFFFF"/>
-      <rect x="0" y="52" width="30" height="6" rx="3" fill="#FFFFFF"/>
-      <rect x="7" y="66" width="20" height="6" rx="3" fill="#FFFFFF"/>
-      <rect x="15" y="78" width="10" height="6" rx="3" fill="#FFFFFF"/>
-      <!-- Caja de carga con base plana -->
-      <path d="M30 18 h38 a6 6 0 0 1 6 6 v46 h-7 a13 13 0 0 0 -26 0 h-11 v-46 a6 6 0 0 1 6 -6 z" fill="#FFFFFF"/>
+      <rect x="2" y="24" width="24" height="6" rx="3" fill="#FFFFFF"/>
+      <rect x="8" y="38" width="18" height="6" rx="3" fill="#FFFFFF"/>
+      <rect x="0" y="52" width="28" height="6" rx="3" fill="#FFFFFF"/>
+      <rect x="5" y="66" width="20" height="6" rx="3" fill="#FFFFFF"/>
+      <!-- Caja de carga plana -->
+      <path d="M30 18 h38 a6 6 0 0 1 6 6 v48 h-44 v-48 a6 6 0 0 1 6 -6 z" fill="#FFFFFF"/>
       <!-- Cabina aerodinámica -->
-      <path d="M75 32 h12 a5 5 0 0 1 4 2 l10 13 a6 6 0 0 1 2 4 v19 a4 4 0 0 1 -4 4 h-5 a13 13 0 0 0 -26 0 v-38 a4 4 0 0 1 4 -4 z" fill="#FFFFFF"/>
+      <path d="M74 32 h12 a5 5 0 0 1 4 2 l10 13 a6 6 0 0 1 2 4 v21 h-28 v-40 z" fill="#FFFFFF"/>
       <!-- Ventana de cabina -->
-      <path d="M79 38 h7 a2 2 0 0 1 1.7 1 l6 8 a2 2 0 0 1 .3 1 v3 a2 2 0 0 1 -2 2 h-13 a2 2 0 0 1 -2 -2 v-11 a2 2 0 0 1 2 -2 z" fill="var(--maps-color)"/>
-      <!-- Ruedas -->
+      <path d="M78 38 h8 a2 2 0 0 1 1.7 1 l6 8 a2 2 0 0 1 .3 1 v3 a2 2 0 0 1 -2 2 h-14 a2 2 0 0 1 -2 -2 v-11 a2 2 0 0 1 2 -2 z" fill="var(--maps-color)"/>
+      <!-- Ruedas despejadas en la base -->
       <circle cx="48" cy="74" r="11" fill="#FFFFFF"/>
       <circle cx="48" cy="74" r="5" fill="var(--maps-color)"/>
       <circle cx="85" cy="74" r="11" fill="#FFFFFF"/>
@@ -674,7 +673,6 @@
     }
   }
 
-  /* Sonido de acierto positivo para "Entregado" */
   function playSuccessChime() {
     try {
       const ctx = getAudioContext();
@@ -684,7 +682,7 @@
       const osc1 = ctx.createOscillator();
       const gain1 = ctx.createGain();
       osc1.type = 'triangle';
-      osc1.frequency.setValueAtTime(587.33, now); // Re (D5)
+      osc1.frequency.setValueAtTime(587.33, now);
       gain1.gain.setValueAtTime(0.26, now);
       gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
       osc1.connect(gain1);
@@ -695,7 +693,7 @@
       const osc2 = ctx.createOscillator();
       const gain2 = ctx.createGain();
       osc2.type = 'sine';
-      osc2.frequency.setValueAtTime(880.00, now + 0.07); // La (A5)
+      osc2.frequency.setValueAtTime(880.00, now + 0.07);
       gain2.gain.setValueAtTime(0.28, now + 0.07);
       gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
       osc2.connect(gain2);
@@ -971,14 +969,22 @@
     }
   }
 
+  /* Normalización y pausas auditivas inteligentes (Piso, Depto y Opcionales) */
   function normalizarTextoParaVoz(texto) {
     let t = String(texto || '');
-    t = t.replace(/(\d+)\s*[°º]\s*(piso|p\.)/gi, 'piso $1');
-    t = t.replace(/(\d+)\s*[°º]/g, 'piso $1');
-    t = t.replace(/(\d+)\s*(mo|ro|to|er|do)\s*(piso|p\.)/gi, 'piso $1');
+
+    // Pausa acústica tras parada opcional
+    t = t.replace(/parada opcional alejada\./gi, 'Parada opcional alejada, ');
+
+    // Asegurar pausa antes de 'piso' o 'depto' si no hay coma
+    t = t.replace(/([^,])\s+(piso\s+\d+)/gi, '$1, $2');
+    t = t.replace(/(\d+)\s*[°º]\s*(piso|p\.)/gi, ', piso $1');
+    t = t.replace(/(\d+)\s*[°º]/g, ', piso $1');
+    t = t.replace(/(\d+)\s*(mo|ro|to|er|do)\s*(piso|p\.)/gi, ', piso $1');
     t = t.replace(/piso\s+(\d+)\s+piso/gi, 'piso $1');
     t = t.replace(/\bpiso\s*piso\b/gi, 'piso');
     t = t.replace(/\bdpto\b|\bdepto\b|\bdto\b/gi, 'departamento');
+
     return t.replace(/\s+/g, ' ').trim();
   }
 
@@ -992,7 +998,7 @@
         const textoLimpio = normalizarTextoParaVoz(texto);
         const utterance = new SpeechSynthesisUtterance(textoLimpio);
         utterance.lang = 'es-AR';
-        utterance.rate = 0.93;
+        utterance.rate = 0.92;
         utterance.pitch = 1.05;
 
         if (cachedVoices.length === 0) {
