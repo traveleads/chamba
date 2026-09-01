@@ -256,10 +256,18 @@
     .pkg-row {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
       margin-bottom: 6px;
     }
-    .pkg-icon { width: 34px; height: 34px; fill: var(--accent); }
+    .pkg-icon-box {
+      width: 42px;
+      height: 42px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+    }
+    .pkg-icon-box svg { width: 100%; height: 100%; fill: currentColor; }
     .pkg-title { font-size: 44px; font-weight: 800; letter-spacing: -1.5px; color: var(--text-main); }
 
     .address-title { font-size: 22px; font-weight: 700; line-height: 1.25; margin-bottom: 4px; color: var(--text-main); }
@@ -421,7 +429,17 @@
     <div class="delivery-badge">Próxima Parada</div>
     
     <div class="pkg-row">
-      <svg class="pkg-icon" viewBox="0 0 24 24"><path d="M21 16.5l-9 5.25-9-5.25V7.5L12 2.25l9 5.25v9zM12 4.15L5.04 8.2 12 12.25l6.96-4.05L12 4.15zM4.5 9.87v5.76L11.25 19.5v-5.76L4.5 9.87zm15 0l-6.75 3.87v5.76L19.5 15.63V9.87z"/></svg>
+      <!-- Icono Encomienda con cinta y etiqueta de envío -->
+      <div class="pkg-icon-box">
+        <svg viewBox="0 0 24 24">
+          <path d="M20 7l-8-4-8 4 8 4 8-4z" opacity="0.9"/>
+          <path d="M4 9v9l7 4V12.7L4 9z"/>
+          <path d="M20 9l-7 3.7V22l7-4V9z"/>
+          <!-- Cinta adhesiva y etiqueta -->
+          <path d="M10.5 4.75L13.5 6.25v15.5l-3-1.7V4.75z" fill="#FFF" opacity="0.35"/>
+          <path d="M15 13.5h3v2.5h-3z" fill="#FFF" opacity="0.8"/>
+        </svg>
+      </div>
       <div class="pkg-title" id="curPkg">#--</div>
     </div>
 
@@ -464,8 +482,16 @@
 <div id="modalOpciones" class="modal-overlay">
   <div class="modal-card">
     <div class="modal-title">⚙️ Opciones de Jornada</div>
-    <div class="modal-subtitle">¿Qué deseas hacer con el recorrido actual?</div>
+    <div class="modal-subtitle">Configuración y gestión del recorrido actual:</div>
     
+    <button class="modal-action-btn" onclick="toggleVozGuia()">
+      <span id="optVoiceIcon" style="font-size: 22px;">🔊</span>
+      <div>
+        <strong id="optVoiceTitle">Voz guía activada</strong>
+        <div id="optVoiceDesc" style="font-size: 13px; color: var(--text-muted); font-weight: normal;">Toca para silenciar los anuncios por voz</div>
+      </div>
+    </button>
+
     <button class="modal-action-btn" onclick="ejecutarOpcionAnexo()">
       <span style="font-size: 22px;">📄</span>
       <div>
@@ -482,7 +508,7 @@
       </div>
     </button>
 
-    <button class="modal-cancel-btn" onclick="cerrarModal('modalOpciones')">Cancelar</button>
+    <button class="modal-cancel-btn" onclick="cerrarModal('modalOpciones')">Cerrar</button>
   </div>
 </div>
 
@@ -508,7 +534,7 @@
     </button>
 
     <div style="margin-top: 10px; font-size: 13px; color: var(--text-muted); font-weight: 600;">Otras observaciones (opcional):</div>
-    <input type="text" id="customReasonInput" class="modal-input" placeholder="Ej: No tiene timbre, calle cortada..." />
+    <input type="text" id="customReasonInput" class="modal-input" placeholder="Ej: No tiene timbre, portón cerrado..." />
 
     <button class="btn btn-primary" style="padding: 12px; margin-bottom: 6px;" onclick="confirmarNoEntregaCustom()">Guardar reporte</button>
     <button class="modal-cancel-btn" onclick="cerrarModal('modalNoEntrega')">Volver</button>
@@ -526,8 +552,11 @@
   let userCoords = null;
   let audioCtx = null;
   let voiceTimer = null;
+  let vozSilenciada = false;
 
-  /* Síntesis de clic mecánico/táctil por ruido filtrado (Teclado nativo) */
+  const SVG_GEAR = `<svg class="spin-gear" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>`;
+
+  /* Generador de sonido de tecla con cuerpo y volumen audible */
   function playKeyClick() {
     try {
       const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
@@ -535,41 +564,38 @@
       if (!audioCtx) audioCtx = new AudioCtxClass();
       if (audioCtx.state === 'suspended') audioCtx.resume();
 
-      const sampleRate = audioCtx.sampleRate;
-      const bufferSize = Math.floor(sampleRate * 0.012); // 12 milisegundos
-      const buffer = audioCtx.createBuffer(1, bufferSize, sampleRate);
-      const data = buffer.getChannelData(0);
-
-      // Ruido blanco puro
-      for (let i = 0; i < bufferSize; i++) {
-        data[i] = (Math.random() * 2 - 1);
-      }
-
-      const noise = audioCtx.createBufferSource();
-      noise.buffer = buffer;
-
-      // Filtro paso banda centrado en el chasquido del teclado
-      const filter = audioCtx.createBiquadFilter();
-      filter.type = 'bandpass';
-      filter.frequency.setValueAtTime(2200, audioCtx.currentTime);
-      filter.Q.setValueAtTime(1.8, audioCtx.currentTime);
-
-      const gain = audioCtx.createGain();
       const now = audioCtx.currentTime;
-      gain.gain.setValueAtTime(0.35, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.012);
 
-      noise.connect(filter);
-      filter.connect(gain);
-      gain.connect(audioCtx.destination);
+      // 1. Golpe táctil metálico seco (Snap de teclado)
+      const snapOsc = audioCtx.createOscillator();
+      const snapGain = audioCtx.createGain();
+      snapOsc.type = 'triangle';
+      snapOsc.frequency.setValueAtTime(1200, now);
+      snapOsc.frequency.exponentialRampToValueAtTime(350, now + 0.025);
+      snapGain.gain.setValueAtTime(0.75, now);
+      snapGain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
+      snapOsc.connect(snapGain);
+      snapGain.connect(audioCtx.destination);
+      snapOsc.start(now);
+      snapOsc.stop(now + 0.03);
 
-      noise.start(now);
-    } catch (e) {
-      // Audio no intrusivo
-    }
+      // 2. Resonancia grave de pulsación
+      const thudOsc = audioCtx.createOscillator();
+      const thudGain = audioCtx.createGain();
+      thudOsc.type = 'sine';
+      thudOsc.frequency.setValueAtTime(280, now);
+      thudOsc.frequency.exponentialRampToValueAtTime(80, now + 0.035);
+      thudGain.gain.setValueAtTime(0.65, now);
+      thudGain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
+      thudOsc.connect(thudGain);
+      thudGain.connect(audioCtx.destination);
+      thudOsc.start(now);
+      thudOsc.stop(now + 0.04);
+
+    } catch (e) {}
 
     if ("vibrate" in navigator) {
-      try { navigator.vibrate(15); } catch (e) {}
+      try { navigator.vibrate(18); } catch (e) {}
     }
   }
 
@@ -597,6 +623,7 @@
     cargarVoces();
     solicitarGPS();
     vincularSonidosBotones();
+    cargarEstadoVoz();
 
     if ('speechSynthesis' in window) {
       window.speechSynthesis.onvoiceschanged = cargarVoces;
@@ -617,6 +644,36 @@
 
     recuperarEstadoDelDia();
   };
+
+  function cargarEstadoVoz() {
+    const guardada = localStorage.getItem('reparto_voz_silenciada');
+    vozSilenciada = (guardada === 'true');
+    actualizarVistaOpcionVoz();
+  }
+
+  function toggleVozGuia() {
+    vozSilenciada = !vozSilenciada;
+    localStorage.setItem('reparto_voz_silenciada', vozSilenciada ? 'true' : 'false');
+    actualizarVistaOpcionVoz();
+    if (vozSilenciada && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+  }
+
+  function actualizarVistaOpcionVoz() {
+    const icon = document.getElementById('optVoiceIcon');
+    const title = document.getElementById('optVoiceTitle');
+    const desc = document.getElementById('optVoiceDesc');
+    if (vozSilenciada) {
+      icon.innerText = "🔇";
+      title.innerText = "Voz guía silenciada";
+      desc.innerText = "Toca para reactivar la locución automática";
+    } else {
+      icon.innerText = "🔊";
+      title.innerText = "Voz guía activada";
+      desc.innerText = "Toca para silenciar los anuncios por voz";
+    }
+  }
 
   function configurarDiaDeLaSemana() {
     const dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
@@ -795,9 +852,10 @@
   }
 
   function hablarConRetraso(texto, delayMs = 550) {
+    if (vozSilenciada) return;
     if (voiceTimer) clearTimeout(voiceTimer);
     voiceTimer = setTimeout(() => {
-      if ('speechSynthesis' in window) {
+      if ('speechSynthesis' in window && !vozSilenciada) {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(texto);
         utterance.lang = 'es-AR';
