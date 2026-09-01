@@ -278,14 +278,80 @@
     .stop-info { flex: 1; }
     .stop-addr { font-weight: 600; font-size: 15px; }
     .stop-person { font-size: 13px; color: var(--text-muted); }
+
+    /* Modales personalizados visuales */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 20px;
+    }
+    .modal-card {
+      background: var(--card-bg);
+      width: 92%;
+      max-width: 440px;
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      border: 1px solid var(--border-subtle);
+    }
+    .modal-title { font-size: 19px; font-weight: 800; margin-bottom: 8px; text-align: center; }
+    .modal-subtitle { font-size: 14px; color: var(--text-muted); margin-bottom: 18px; text-align: center; }
+    .modal-action-btn {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 12px;
+      width: 100%;
+      padding: 15px 16px;
+      border-radius: 16px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg);
+      color: var(--text-main);
+      margin-bottom: 10px;
+      text-align: left;
+    }
+    .modal-action-btn:active { background: var(--border-subtle); transform: scale(0.98); }
+    .modal-input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border-subtle);
+      font-size: 14px;
+      margin-top: 6px;
+      margin-bottom: 14px;
+      outline: none;
+      background: var(--bg);
+      color: var(--text-main);
+    }
+    .modal-cancel-btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 14px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      text-align: center;
+    }
   </style>
 </head>
 <body>
 
 <div class="container">
   <div class="header">
-    <h1>Recorrido de hoy</h1>
-    <button id="btnOptionsDots" class="btn-options-dots" onclick="gestionarNuevoEscaneo()" title="Opciones">
+    <h1 id="mainTitle">Recorrido de hoy</h1>
+    <button id="btnOptionsDots" class="btn-options-dots" onclick="abrirModalOpciones()" title="Opciones">
       <svg viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
     </button>
   </div>
@@ -373,7 +439,7 @@
       Entregado
     </button>
     
-    <button class="btn btn-outline-danger" onclick="marcarNoEntregado()">
+    <button class="btn btn-outline-danger" onclick="abrirModalNoEntregado()">
       <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
       No entregado / Problema
     </button>
@@ -392,6 +458,61 @@
   <div id="issuesSection" class="card" style="display: none; border-color: rgba(255, 69, 58, 0.3);">
     <div class="section-title" style="color: var(--danger);">Aislados (> 5 km) / Novedades</div>
     <div id="issuesList" style="font-size: 14px; line-height: 1.5;"></div>
+  </div>
+</div>
+
+<!-- Modal 1: Opciones de Escaneo (Menú 3 puntos) -->
+<div id="modalOpciones" class="modal-overlay">
+  <div class="modal-card">
+    <div class="modal-title">⚙️ Opciones de Jornada</div>
+    <div class="modal-subtitle">¿Qué deseas hacer con el recorrido actual?</div>
+    
+    <button class="modal-action-btn" onclick="ejecutarOpcionAnexo()">
+      <span style="font-size: 22px;">📄</span>
+      <div>
+        <strong>Agregar más hojas</strong>
+        <div style="font-size: 13px; color: var(--text-muted); font-weight: normal;">Suma paquetes nuevos a la ruta actual</div>
+      </div>
+    </button>
+
+    <button class="modal-action-btn" style="color: var(--danger); border-color: rgba(255,59,48,0.3);" onclick="ejecutarOpcionReinicio()">
+      <span style="font-size: 22px;">🗑️</span>
+      <div>
+        <strong>Empezar de cero (Nuevo día)</strong>
+        <div style="font-size: 13px; color: var(--danger); font-weight: normal;">Borra todos los datos y limpia el recorrido</div>
+      </div>
+    </button>
+
+    <button class="modal-cancel-btn" onclick="cerrarModal('modalOpciones')">Cancelar</button>
+  </div>
+</div>
+
+<!-- Modal 2: Motivos de No Entrega -->
+<div id="modalNoEntrega" class="modal-overlay">
+  <div class="modal-card">
+    <div class="modal-title">⚠️ Reportar Inconveniente</div>
+    <div class="modal-subtitle">Selecciona el motivo por el cual no se pudo entregar:</div>
+
+    <button class="modal-action-btn" onclick="confirmarNoEntrega('🏠 Nadie en el domicilio / Ausente')">
+      <span>🏠</span>
+      <strong>Nadie en el domicilio / Ausente</strong>
+    </button>
+
+    <button class="modal-action-btn" onclick="confirmarNoEntrega('📍 Dirección incorrecta / No existe')">
+      <span>📍</span>
+      <strong>Dirección incorrecta / No existe</strong>
+    </button>
+
+    <button class="modal-action-btn" onclick="confirmarNoEntrega('🚫 Rechazado por el cliente')">
+      <span>🚫</span>
+      <strong>Rechazado por el cliente</strong>
+    </button>
+
+    <div style="margin-top: 10px; font-size: 13px; color: var(--text-muted); font-weight: 600;">Otras observaciones (opcional):</div>
+    <input type="text" id="customReasonInput" class="modal-input" placeholder="Ej: No tiene timbre, calle cortada..." />
+
+    <button class="btn btn-primary" style="padding: 12px; margin-bottom: 6px;" onclick="confirmarNoEntregaCustom()">Guardar reporte</button>
+    <button class="modal-cancel-btn" onclick="cerrarModal('modalNoEntrega')">Volver</button>
   </div>
 </div>
 
@@ -416,6 +537,7 @@
   }
 
   window.onload = () => {
+    configurarDiaDeLaSemana();
     verificarLimpiezaDiaria();
     ajustarSaludo();
     cargarVoces();
@@ -440,6 +562,12 @@
 
     recuperarEstadoDelDia();
   };
+
+  function configurarDiaDeLaSemana() {
+    const dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+    const diaHoy = dias[new Date().getDay()];
+    document.getElementById('mainTitle').innerText = `Recorrido de hoy ${diaHoy}`;
+  }
 
   function solicitarGPS() {
     if ("geolocation" in navigator) {
@@ -486,25 +614,60 @@
     localStorage.removeItem('reparto_novedades');
   }
 
-  function gestionarNuevoEscaneo() {
-    const opcion = prompt("¿Qué deseas hacer?\n1. Agregar más hojas a la ruta actual\n2. Empezar jornada desde cero (borrar todo)\n(Escribe 1 o 2):", "1");
-    
-    if (opcion === "1") {
-      modoAnexo = true;
-      fotosAcumuladas = [];
-      document.getElementById('scanControls').style.display = 'block';
-      document.getElementById('scanStatus').style.display = 'none';
-      document.getElementById('btnPhotoText').innerText = "Tomar Foto a la Nueva Hoja";
-      document.getElementById('addPhotoBtn').classList.remove('btn-secondary');
-      document.getElementById('addPhotoBtn').classList.add('btn-primary');
-      document.getElementById('btnProcessAll').style.display = 'none';
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else if (opcion === "2") {
-      if (confirm("¿Seguro que quieres borrar la jornada completa?")) {
-        limpiarDatosLocales();
-        location.reload();
-      }
-    }
+  /* Control de Modales Visuales */
+  function abrirModalOpciones() {
+    document.getElementById('modalOpciones').style.display = 'flex';
+  }
+
+  function abrirModalNoEntregado() {
+    document.getElementById('customReasonInput').value = '';
+    document.getElementById('modalNoEntrega').style.display = 'flex';
+  }
+
+  function cerrarModal(id) {
+    document.getElementById(id).style.display = 'none';
+  }
+
+  function ejecutarOpcionAnexo() {
+    cerrarModal('modalOpciones');
+    modoAnexo = true;
+    fotosAcumuladas = [];
+    document.getElementById('scanControls').style.display = 'block';
+    document.getElementById('scanStatus').style.display = 'none';
+    document.getElementById('btnPhotoText').innerText = "Tomar Foto a la Nueva Hoja";
+    document.getElementById('addPhotoBtn').classList.remove('btn-secondary');
+    document.getElementById('addPhotoBtn').classList.add('btn-primary');
+    document.getElementById('btnProcessAll').style.display = 'none';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function ejecutarOpcionReinicio() {
+    cerrarModal('modalOpciones');
+    limpiarDatosLocales();
+    location.reload();
+  }
+
+  function confirmarNoEntrega(motivo) {
+    cerrarModal('modalNoEntrega');
+    registrarFalloEntrega(motivo);
+  }
+
+  function confirmarNoEntregaCustom() {
+    const inputVal = document.getElementById('customReasonInput').value.trim();
+    const motivo = inputVal ? `📝 ${inputVal}` : "⚠️ Inconveniente en el domicilio";
+    cerrarModal('modalNoEntrega');
+    registrarFalloEntrega(motivo);
+  }
+
+  function registrarFalloEntrega(motivo) {
+    const cur = ruta[currentIndex];
+    novedades.push({ ...cur, motivo: motivo });
+    historialAcciones.push({ tipo: 'no_entregado', index: currentIndex, paquete: cur.paquete });
+    renderNovedades();
+    currentIndex++;
+    actualizarBotonRutaMaps();
+    guardarEstado();
+    actualizarVista(true);
   }
 
   function guardarEstado() {
@@ -575,20 +738,18 @@
     }
   }
 
-  // Sintetizador con selección de voces premium (sin raspado)
   function hablar(texto) {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(texto);
       utterance.lang = 'es-AR';
-      utterance.rate = 0.93; // Ritmo cómodo
-      utterance.pitch = 1.05; // Timbre cálido
+      utterance.rate = 0.93;
+      utterance.pitch = 1.05;
 
       if (cachedVoices.length === 0) {
         cachedVoices = window.speechSynthesis.getVoices();
       }
 
-      // Filtro de voces humanas / neurales
       const vozHumana = cachedVoices.find(v => 
         (v.lang.includes('es') || v.lang.includes('ES')) &&
         (v.name.includes('Natural') || v.name.includes('Neural') || v.name.includes('Google') || 
@@ -628,7 +789,7 @@
         return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
       }
     } catch (e) {
-      console.warn("Geocodificación fallida para:", addr);
+      console.warn("Geocodificación no disponible para:", addr);
     }
     return null;
   }
@@ -806,7 +967,7 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
         }
       }));
 
-      // Filtro de 5 km para puntos solitarios
+      // Filtro de 5 km solo para puntos individuales huérfanos
       const puntosConCoords = puntos.filter(p => p.lat !== null && p.lng !== null);
       if (puntosConCoords.length > 2) {
         puntos.forEach(p => {
@@ -993,21 +1154,6 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
     actualizarBotonRutaMaps();
     guardarEstado();
     actualizarVista(true);
-  }
-
-  function marcarNoEntregado() {
-    const cur = ruta[currentIndex];
-    const motivo = prompt("Motivo de la no entrega:\n1. Ausente / Nadie atiende\n2. Dirección incorrecta\n3. Rechazado", "Ausente / Nadie atiende");
-    
-    if (motivo !== null) {
-      novedades.push({ ...cur, motivo: motivo });
-      historialAcciones.push({ tipo: 'no_entregado', index: currentIndex, paquete: cur.paquete });
-      renderNovedades();
-      currentIndex++;
-      actualizarBotonRutaMaps();
-      guardarEstado();
-      actualizarVista(true);
-    }
   }
 
   function deshacerUltimo() {
