@@ -59,7 +59,7 @@
       justify-content: space-between;
       margin-bottom: 20px;
     }
-    .header h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+    .header h1 { font-size: 23px; font-weight: 700; letter-spacing: -0.5px; }
 
     .btn-options-dots {
       background: var(--card-bg);
@@ -279,7 +279,6 @@
     .stop-addr { font-weight: 600; font-size: 15px; }
     .stop-person { font-size: 13px; color: var(--text-muted); }
 
-    /* Modales personalizados visuales */
     .modal-overlay {
       display: none;
       position: fixed;
@@ -461,7 +460,7 @@
   </div>
 </div>
 
-<!-- Modal 1: Opciones de Escaneo (Menú 3 puntos) -->
+<!-- Modal 1: Opciones de Jornada -->
 <div id="modalOpciones" class="modal-overlay">
   <div class="modal-card">
     <div class="modal-title">⚙️ Opciones de Jornada</div>
@@ -565,8 +564,10 @@
 
   function configurarDiaDeLaSemana() {
     const dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
-    const diaHoy = dias[new Date().getDay()];
-    document.getElementById('mainTitle').innerText = `Recorrido de hoy ${diaHoy}`;
+    const ahora = new Date();
+    const diaNombre = dias[ahora.getDay()];
+    const diaNumero = ahora.getDate();
+    document.getElementById('mainTitle').innerText = `Recorrido de hoy ${diaNombre} ${diaNumero}`;
   }
 
   function solicitarGPS() {
@@ -614,7 +615,6 @@
     localStorage.removeItem('reparto_novedades');
   }
 
-  /* Control de Modales Visuales */
   function abrirModalOpciones() {
     document.getElementById('modalOpciones').style.display = 'flex';
   }
@@ -704,7 +704,7 @@
   function actualizarBotonRutaMaps() {
     const btnAll = document.getElementById('btnAllMaps');
     if (ruta.length > 0) {
-      const stops = ruta.slice(0, 9).map(r => encodeURIComponent(r.direccion));
+      const stops = ruta.slice(0, 9).map(r => encodeURIComponent(r.direccionBusqueda || r.direccion));
       const origin = userCoords ? `${userCoords.lat},${userCoords.lng}` : stops[0];
       const destinations = userCoords ? stops : stops.slice(1);
       
@@ -879,15 +879,25 @@
 
     try {
       const prompt = `Analiza estas planillas de reparto y extrae todas las entregas.
-Es OBLIGATORIO extraer número de paquete, remitente o destinatario, calle con altura y localidad o barrio.
+
+REGLAS DE IDENTIFICACIÓN:
+1. "paquete": Extrae ÚNICAMENTE el número identificador limpio (ejemplo: si dice "P-019" devuelve "19").
+2. "remitente": Nombre y apellido del destinatario.
+3. "calle": Calle, altura y datos complementarios como piso, departamento, timbre o lote (ejemplo: "Av. Rivadavia 1234 4°B" o "Barrio Los Alamos Lote 12").
+4. "localidad": Localidad, ciudad o barrio.
+
+REGLA DE PUNTOS AISLADOS (OUTLIERS):
+- Si hay un grupo de paradas en una ciudad y otro grupo en otra ciudad (incluso a 10 km), AMBOS GRUPOS SON VÁLIDOS ("fueraDeZona": false).
+- Marca "fueraDeZona": true ÚNICAMENTE si hay 1 o 2 entregas solitarias totalmente huérfanas y aisladas a más de 5 km de cualquier otra parada.
 
 Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
 [
   {
-    "paquete": "1",
+    "paquete": "19",
     "remitente": "Nombre y Apellido",
-    "calle": "Calle y Altura",
-    "localidad": "Localidad o Barrio"
+    "calle": "Calle 123 2° A",
+    "localidad": "Localidad",
+    "fueraDeZona": false
   }
 ]`;
 
@@ -940,17 +950,28 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
 
       for (const e of entregasCrudas) {
         const cleanPkg = sanitizarNumeroPaquete(e.paquete);
-        const calle = String(e.calle || e.direccion || '').trim();
+        const calleCompleta = String(e.calle || e.direccion || '').trim();
         const loc = String(e.localidad || '').trim();
-        const fullAddress = loc && !calle.toLowerCase().includes(loc.toLowerCase()) ? `${calle}, ${loc}` : calle;
+        
+        const fullAddress = loc && !calleCompleta.toLowerCase().includes(loc.toLowerCase()) 
+          ? `${calleCompleta}, ${loc}` 
+          : calleCompleta;
+
+        // Limpia piso/departamento para la búsqueda en mapas para evitar fallos de ubicación
+        const calleLimpiaGps = calleCompleta.replace(/(\d+)\s*(piso|p\.|°|dto|dpto|depto|depto\.|lote|casa|torre|timbre).*$/i, '$1').trim();
+        const direccionGps = loc && !calleLimpiaGps.toLowerCase().includes(loc.toLowerCase())
+          ? `${calleLimpiaGps}, ${loc}`
+          : calleLimpiaGps;
+
         const key = (cleanPkg + '|' + fullAddress).toLowerCase();
 
-        if (!vistos.has(key) && calle.length > 2) {
+        if (!vistos.has(key) && calleCompleta.length > 2) {
           vistos.add(key);
           puntos.push({
             paquete: cleanPkg || (puntos.length + 1).toString(),
             remitente: String(e.remitente || 'Destinatario').trim(),
-            direccion: fullAddress,
+            direccion: fullAddress, // Se muestra en pantalla con piso/depto
+            direccionBusqueda: direccionGps, // Se usa para geolocalizar
             localidad: loc,
             lat: null,
             lng: null,
@@ -960,14 +981,13 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
       }
 
       await Promise.all(puntos.map(async (p) => {
-        const coords = await geocodificarDireccion(p.direccion);
+        const coords = await geocodificarDireccion(p.direccionBusqueda);
         if (coords) {
           p.lat = coords.lat;
           p.lng = coords.lng;
         }
       }));
 
-      // Filtro de 5 km solo para puntos individuales huérfanos
       const puntosConCoords = puntos.filter(p => p.lat !== null && p.lng !== null);
       if (puntosConCoords.length > 2) {
         puntos.forEach(p => {
@@ -1120,7 +1140,7 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
     document.getElementById('curAddress').innerText = cur.direccion;
     document.getElementById('curName').innerText = cur.remitente;
 
-    const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(cur.direccion)}`;
+    const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(cur.direccionBusqueda || cur.direccion)}`;
     document.getElementById('btnMaps').href = mapsUrl;
     document.getElementById('currentCard').style.display = 'block';
 
