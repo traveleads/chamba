@@ -67,9 +67,9 @@
       background: var(--card-bg);
       border: 1px solid var(--border-subtle);
       color: var(--text-main);
-      border-radius: 14px;
-      width: 42px;
-      height: 42px;
+      border-radius: 16px;
+      width: 44px;
+      height: 44px;
       display: none;
       align-items: center;
       justify-content: center;
@@ -82,8 +82,8 @@
 
     .welcome-card {
       background: var(--card-bg);
-      border-radius: 22px;
-      padding: 24px 20px;
+      border-radius: 28px;
+      padding: 26px 20px;
       margin-bottom: 18px;
       border: 1px solid var(--border-subtle);
       box-shadow: var(--card-shadow);
@@ -92,20 +92,20 @@
     .welcome-logo {
       width: 90px;
       height: 90px;
-      border-radius: 20px;
+      border-radius: 24px;
       margin-bottom: 14px;
       box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
     }
     .welcome-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
     .welcome-subtitle { font-size: 14px; color: var(--text-muted); line-height: 1.4; }
 
-    .config-box { background: var(--card-bg); padding: 12px; border-radius: 16px; margin-bottom: 16px; border: 1px solid var(--border-subtle); }
-    .config-box input { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-subtle); font-size: 15px; outline: none; background: transparent; color: var(--text-main); }
+    .config-box { background: var(--card-bg); padding: 12px; border-radius: 20px; margin-bottom: 16px; border: 1px solid var(--border-subtle); }
+    .config-box input { width: 100%; padding: 12px; border-radius: 14px; border: 1px solid var(--border-subtle); font-size: 15px; outline: none; background: transparent; color: var(--text-main); }
 
     .card {
       background: var(--card-bg);
-      border-radius: 22px;
-      padding: 22px;
+      border-radius: 28px;
+      padding: 24px;
       margin-bottom: 16px;
       border: 1px solid var(--border-subtle);
       box-shadow: var(--card-shadow);
@@ -128,10 +128,10 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
+      gap: 12px;
       width: 100%;
       padding: 16px;
-      border-radius: 16px;
+      border-radius: 20px;
       font-size: 17px;
       font-weight: 600;
       cursor: pointer;
@@ -171,7 +171,7 @@
       font-size: 15px;
       margin-top: 4px;
       margin-bottom: 16px;
-      border-radius: 14px;
+      border-radius: 16px;
     }
 
     .btn svg { width: 22px; height: 22px; fill: currentColor; }
@@ -183,7 +183,7 @@
       display: none;
       background: var(--card-bg);
       padding: 22px;
-      border-radius: 22px;
+      border-radius: 28px;
       margin-bottom: 16px;
       border: 1px solid var(--border-subtle);
       box-shadow: var(--card-shadow);
@@ -225,7 +225,7 @@
       background: rgba(88, 86, 214, 0.12);
       color: var(--maps-color);
       padding: 10px 14px;
-      border-radius: 12px;
+      border-radius: 16px;
       font-size: 14px;
       font-weight: 600;
       text-align: center;
@@ -236,7 +236,7 @@
       display: none;
       position: relative;
       background: var(--card-bg);
-      border-radius: 18px;
+      border-radius: 20px;
       margin-bottom: 16px;
       border: 1px solid var(--border-subtle);
       box-shadow: var(--card-shadow);
@@ -267,8 +267,8 @@
       font-weight: 700;
       color: var(--maps-color);
       background: rgba(88, 86, 214, 0.12);
-      padding: 4px 10px;
-      border-radius: 8px;
+      padding: 5px 12px;
+      border-radius: 10px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       margin-bottom: 8px;
@@ -331,7 +331,6 @@
       margin-left: 6px;
     }
 
-    /* Modales */
     .modal-overlay {
       display: none;
       position: fixed;
@@ -347,8 +346,8 @@
       background: var(--card-bg);
       width: 94%;
       max-width: 440px;
-      border-radius: 24px;
-      padding: 24px 20px;
+      border-radius: 32px;
+      padding: 26px 22px;
       box-shadow: 0 14px 38px rgba(0,0,0,0.35);
       border: 1.5px solid var(--border-subtle);
     }
@@ -361,7 +360,7 @@
       gap: 14px;
       width: 100%;
       padding: 17px 18px;
-      border-radius: 18px;
+      border-radius: 20px;
       font-size: 17px;
       font-weight: 600;
       cursor: pointer;
@@ -390,7 +389,7 @@
     .modal-input {
       width: 100%;
       padding: 14px;
-      border-radius: 14px;
+      border-radius: 16px;
       border: 1.5px solid var(--border-subtle);
       font-size: 15px;
       margin-top: 6px;
@@ -402,7 +401,7 @@
     .modal-cancel-btn {
       width: 100%;
       padding: 15px;
-      border-radius: 14px;
+      border-radius: 16px;
       font-size: 16px;
       font-weight: 600;
       cursor: pointer;
@@ -479,10 +478,26 @@
     <div id="liveProgressBar" class="live-progress-bar"></div>
   </div>
 
-  <!-- Botón Ver recorrido con Camioncito de Envíos Gratis / Van más grande y estilizado -->
+  <!-- Botón Ver recorrido con Camión de Envíos Rápidos Vectorizado Fiel a la Imagen -->
   <a id="btnAllMaps" class="btn btn-maps-main" target="_blank" style="display: none;">
-    <svg viewBox="0 0 28 28">
-      <path d="M2 5a1 1 0 0 1 1-1h15a1 1 0 0 1 1 1v13h-2.1a3.5 3.5 0 0 0-6.8 0H9.9a3.5 3.5 0 0 0-6.8 0H2V5zm17 5h4.2a1 1 0 0 1 .8.4l3.6 4.8a1 1 0 0 1 .2.6V18a1 1 0 0 1-1 1h-1.1a3.5 3.5 0 0 0-6.7 0H19V10zm1.5 2v3h4.6l-2.25-3H20.5zM6.5 21a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm14 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/>
+    <svg viewBox="0 0 100 100" style="overflow: visible;">
+      <!-- Estelas de velocidad redondeadas -->
+      <rect x="5" y="24" width="22" height="6" rx="3" fill="currentColor"/>
+      <rect x="10" y="38" width="18" height="6" rx="3" fill="currentColor"/>
+      <rect x="0" y="52" width="30" height="6" rx="3" fill="currentColor"/>
+      <rect x="7" y="66" width="20" height="6" rx="3" fill="currentColor"/>
+      <rect x="15" y="78" width="10" height="6" rx="3" fill="currentColor"/>
+      <!-- Caja de carga con bordes redondeados -->
+      <path d="M30 18 h38 a6 6 0 0 1 6 6 v46 h-7 a13 13 0 0 0 -26 0 h-11 v-46 a6 6 0 0 1 6 -6 z" fill="currentColor"/>
+      <!-- Cabina aerodinámica -->
+      <path d="M75 32 h12 a5 5 0 0 1 4 2 l10 13 a6 6 0 0 1 2 4 v19 a4 4 0 0 1 -4 4 h-5 a13 13 0 0 0 -26 0 v-38 a4 4 0 0 1 4 -4 z" fill="currentColor"/>
+      <!-- Ventana de cabina -->
+      <path d="M79 38 h7 a2 2 0 0 1 1.7 1 l6 8 a2 2 0 0 1 .3 1 v3 a2 2 0 0 1 -2 2 h-13 a2 2 0 0 1 -2 -2 v-11 a2 2 0 0 1 2 -2 z" fill="#5856D6"/>
+      <!-- Ruedas -->
+      <circle cx="48" cy="74" r="11" fill="currentColor"/>
+      <circle cx="48" cy="74" r="5" fill="#5856D6"/>
+      <circle cx="85" cy="74" r="11" fill="currentColor"/>
+      <circle cx="85" cy="74" r="5" fill="#5856D6"/>
     </svg>
     Ver recorrido
   </a>
@@ -536,7 +551,6 @@
     <div id="queueList"></div>
   </div>
 
-  <!-- Tarjeta de Novedades y Descartados -->
   <div id="issuesSection" class="card" style="display: none; border-color: rgba(255, 69, 58, 0.3);">
     <div class="section-title" style="color: var(--danger);">Novedades / Descartados</div>
     <div id="issuesList" style="font-size: 14px; line-height: 1.5;"></div>
@@ -1346,7 +1360,7 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
     
     document.getElementById('curPkg').innerText = `#${cur.paquete}`;
     
-    // Regla visual: doble espacio después de cada coma únicamente en la tarjeta
+    // Regla visual: doble espacio después de cada coma
     const direccionConDobleEspacio = String(cur.direccion || '').replace(/,\s*/g, ',  ');
     document.getElementById('curAddress').innerText = direccionConDobleEspacio;
     document.getElementById('curName').innerText = cur.remitente;
