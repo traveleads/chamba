@@ -175,7 +175,7 @@
     }
 
     .btn svg { width: 22px; height: 22px; fill: currentColor; }
-    .btn-maps-main svg { width: 30px; height: 30px; fill: currentColor; }
+    .btn-maps-main svg { width: 28px; height: 28px; }
     .icon-danger { fill: var(--danger) !important; transition: fill 0.2s ease; }
     input[type="file"] { display: none; }
 
@@ -479,24 +479,26 @@
     <div id="liveProgressBar" class="live-progress-bar"></div>
   </div>
 
-  <!-- Botón Ver recorrido con Camioncito de Envíos Rápidos Vectorizado -->
+  <!-- Botón Ver recorrido con Camión de Envíos Rápidos Vectorizado -->
   <a id="btnAllMaps" class="btn btn-maps-main" target="_blank" style="display: none;">
-    <svg viewBox="0 0 48 32">
-      <!-- Estelas de velocidad redondeadas a la izquierda -->
-      <line x1="5" y1="8" x2="14" y2="8" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"/>
-      <line x1="8" y1="12" x2="14" y2="12" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"/>
-      <line x1="2" y1="16" x2="14" y2="16" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"/>
-      <line x1="6" y1="20" x2="14" y2="20" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"/>
-      <line x1="9" y1="24" x2="13" y2="24" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"/>
-      <!-- Caja de carga plana -->
-      <path d="M16 6 h15 a2 2 0 0 1 2 2 v14 H16 a1 1 0 0 1 -1 -1 V7 a1 1 0 0 1 1 -1 z" fill="#FFFFFF"/>
-      <!-- Cabina de reparto -->
-      <path d="M33 11 h5 a2 2 0 0 1 1.6 0.8 l4 5.2 a2 2 0 0 1 0.4 1.2 v2.8 a1 1 0 0 1 -1 1 h-10 v-11 z" fill="#FFFFFF"/>
-      <!-- Ventana de cabina transparente -->
-      <path d="M34.5 12.5 h3.5 a1 1 0 0 1 0.8 0.4 l3 4 a0.8 0.8 0 0 1 0.1 0.5 v1.6 a0.5 0.5 0 0 1 -0.5 0.5 h-6.9 a0.5 0.5 0 0 1 -0.5 -0.5 v-5.5 a0.5 0.5 0 0 1 0.5 -0.5 z" fill="var(--maps-color)"/>
-      <!-- Ruedas con aro blanco y centro transparente -->
-      <circle cx="21" cy="23" r="3.2" fill="none" stroke="#FFFFFF" stroke-width="2.4"/>
-      <circle cx="38" cy="23" r="3.2" fill="none" stroke="#FFFFFF" stroke-width="2.4"/>
+    <svg viewBox="0 0 100 100">
+      <!-- Estelas de velocidad redondeadas -->
+      <rect x="5" y="24" width="22" height="6" rx="3" fill="#FFFFFF"/>
+      <rect x="10" y="38" width="18" height="6" rx="3" fill="#FFFFFF"/>
+      <rect x="0" y="52" width="30" height="6" rx="3" fill="#FFFFFF"/>
+      <rect x="7" y="66" width="20" height="6" rx="3" fill="#FFFFFF"/>
+      <rect x="15" y="78" width="10" height="6" rx="3" fill="#FFFFFF"/>
+      <!-- Caja de carga con base plana -->
+      <path d="M30 18 h38 a6 6 0 0 1 6 6 v46 h-7 a13 13 0 0 0 -26 0 h-11 v-46 a6 6 0 0 1 6 -6 z" fill="#FFFFFF"/>
+      <!-- Cabina aerodinámica -->
+      <path d="M75 32 h12 a5 5 0 0 1 4 2 l10 13 a6 6 0 0 1 2 4 v19 a4 4 0 0 1 -4 4 h-5 a13 13 0 0 0 -26 0 v-38 a4 4 0 0 1 4 -4 z" fill="#FFFFFF"/>
+      <!-- Ventana de cabina -->
+      <path d="M79 38 h7 a2 2 0 0 1 1.7 1 l6 8 a2 2 0 0 1 .3 1 v3 a2 2 0 0 1 -2 2 h-13 a2 2 0 0 1 -2 -2 v-11 a2 2 0 0 1 2 -2 z" fill="var(--maps-color)"/>
+      <!-- Ruedas -->
+      <circle cx="48" cy="74" r="11" fill="#FFFFFF"/>
+      <circle cx="48" cy="74" r="5" fill="var(--maps-color)"/>
+      <circle cx="85" cy="74" r="11" fill="#FFFFFF"/>
+      <circle cx="85" cy="74" r="5" fill="var(--maps-color)"/>
     </svg>
     Ver recorrido
   </a>
