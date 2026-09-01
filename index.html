@@ -250,13 +250,13 @@
       font-size: 16px;
       font-weight: 600;
     }
-    .summary-content strong { color: #FF9500; font-size: 18px; font-weight: 800; }
+    .summary-content strong { color: var(--maps-color); font-size: 18px; font-weight: 800; }
     .live-progress-bar {
       position: absolute;
       bottom: 0;
       left: 0;
       height: 5px;
-      background: #FF9500;
+      background: var(--success);
       width: 0%;
       transition: width 0.4s ease;
     }
@@ -479,7 +479,7 @@
     <div id="liveProgressBar" class="live-progress-bar"></div>
   </div>
 
-  <!-- Botón Ver recorrido con base plana recta y ruedas visibles -->
+  <!-- Botón Ver recorrido con Camión de Base Plana Recta -->
   <a id="btnAllMaps" class="btn btn-maps-main" target="_blank" style="display: none;">
     <svg viewBox="0 0 100 100">
       <!-- Estelas de velocidad redondeadas -->
@@ -673,6 +673,7 @@
     }
   }
 
+  /* Sonido de acierto positivo para "Entregado" */
   function playSuccessChime() {
     try {
       const ctx = getAudioContext();
@@ -969,14 +970,9 @@
     }
   }
 
-  /* Normalización y pausas auditivas inteligentes (Piso, Depto y Opcionales) */
   function normalizarTextoParaVoz(texto) {
     let t = String(texto || '');
-
-    // Pausa acústica tras parada opcional
     t = t.replace(/parada opcional alejada\./gi, 'Parada opcional alejada, ');
-
-    // Asegurar pausa antes de 'piso' o 'depto' si no hay coma
     t = t.replace(/([^,])\s+(piso\s+\d+)/gi, '$1, $2');
     t = t.replace(/(\d+)\s*[°º]\s*(piso|p\.)/gi, ', piso $1');
     t = t.replace(/(\d+)\s*[°º]/g, ', piso $1');
@@ -984,7 +980,6 @@
     t = t.replace(/piso\s+(\d+)\s+piso/gi, 'piso $1');
     t = t.replace(/\bpiso\s*piso\b/gi, 'piso');
     t = t.replace(/\bdpto\b|\bdepto\b|\bdto\b/gi, 'departamento');
-
     return t.replace(/\s+/g, ' ').trim();
   }
 
