@@ -111,11 +111,18 @@
       box-shadow: var(--card-shadow);
       position: relative;
       overflow: hidden;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
     }
 
     .card-current {
       border: var(--card-focus-border);
       box-shadow: var(--card-focus-glow);
+    }
+
+    /* Variante opcional para paradas lejanas (+5km) */
+    .card-optional {
+      border: 2.5px solid var(--warning) !important;
+      box-shadow: 0 6px 20px rgba(255, 149, 0, 0.22) !important;
     }
 
     .btn {
@@ -141,6 +148,13 @@
     .btn-secondary { background: rgba(10, 132, 255, 0.15); color: var(--accent); box-shadow: none; border: 1px dashed var(--accent); }
     .btn-maps { background: var(--maps-color); color: #FFFFFF; }
     
+    /* Botón GPS en variante de advertencia cuando es opcional */
+    .btn-maps-optional {
+      background: var(--warning) !important;
+      color: #000000 !important;
+      font-weight: 700;
+    }
+
     .btn-action-neutral {
       background: var(--bg);
       color: var(--text-main);
@@ -165,22 +179,6 @@
       font-size: 15px;
       margin-top: 4px;
       margin-bottom: 16px;
-    }
-
-    .btn-incorporar {
-      background: rgba(88, 86, 214, 0.12);
-      color: var(--maps-color);
-      border: 1px solid var(--maps-color);
-      font-size: 15px;
-      padding: 12px 16px;
-      border-radius: 14px;
-      box-shadow: none;
-      margin-bottom: 16px;
-      display: none;
-    }
-    .btn-incorporar:active {
-      background: var(--maps-color);
-      color: #FFFFFF;
     }
 
     .btn svg { width: 22px; height: 22px; fill: currentColor; }
@@ -280,6 +278,20 @@
       text-transform: uppercase;
       letter-spacing: 0.5px;
       margin-bottom: 8px;
+      transition: all 0.3s ease;
+    }
+
+    .delivery-badge.badge-optional {
+      color: #995A00;
+      background: rgba(255, 149, 0, 0.18);
+      font-weight: 800;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .delivery-badge.badge-optional {
+        color: #FFD60A;
+        background: rgba(255, 214, 10, 0.2);
+      }
     }
 
     .pkg-row {
@@ -314,21 +326,15 @@
     .stop-info { flex: 1; }
     .stop-addr { font-weight: 600; font-size: 15px; }
     .stop-person { font-size: 13px; color: var(--text-muted); }
-
-    /* Fila de Aislados con Checkbox de selección */
-    .isolated-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--border-subtle);
-    }
-    .isolated-row:last-child { border-bottom: none; }
-    .isolated-checkbox {
-      width: 22px;
-      height: 22px;
-      accent-color: var(--maps-color);
-      cursor: pointer;
+    .stop-opt-tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      color: #995A00;
+      background: rgba(255, 149, 0, 0.18);
+      padding: 2px 6px;
+      border-radius: 6px;
+      margin-left: 6px;
     }
 
     .modal-overlay {
@@ -447,7 +453,7 @@
     </div>
     <div class="step-item" id="step2">
       <span class="step-icon" id="iconStep2">○</span>
-      <span>Geolocalizando y filtrando aislados (> 5 km)...</span>
+      <span>Geolocalizando e identificando opcionales (> 5 km)...</span>
     </div>
     <div class="step-item" id="step3">
       <span class="step-icon" id="iconStep3">○</span>
@@ -471,7 +477,7 @@
 
   <!-- Tarjeta Entrega Actual -->
   <div id="currentCard" class="card card-current" style="display: none;">
-    <div class="delivery-badge">Próxima Parada</div>
+    <div id="curBadge" class="delivery-badge">Próxima Parada</div>
     
     <div class="pkg-row">
       <div class="pkg-icon-box">
@@ -518,15 +524,9 @@
     <div id="queueList"></div>
   </div>
 
-  <!-- Botón dinámico para incorporar aislados seleccionados -->
-  <button id="btnIncorporar" class="btn btn-incorporar" onclick="incorporarAisladosSeleccionados()">
-    <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-    Incorporar seleccionados a la ruta
-  </button>
-
-  <!-- Tarjeta de Aislados / Novedades -->
+  <!-- Tarjeta de Novedades y Descartados -->
   <div id="issuesSection" class="card" style="display: none; border-color: rgba(255, 69, 58, 0.3);">
-    <div class="section-title" style="color: var(--danger);">Aislados (> 5 km) / Novedades</div>
+    <div class="section-title" style="color: var(--danger);">Novedades / Descartados</div>
     <div id="issuesList" style="font-size: 14px; line-height: 1.5;"></div>
   </div>
 </div>
@@ -565,19 +565,24 @@
   </div>
 </div>
 
-<!-- Modal 2: Motivos de No Entrega -->
+<!-- Modal 2: Motivos de No Entrega con opción de Fuera de Zona -->
 <div id="modalNoEntrega" class="modal-overlay">
   <div class="modal-card">
     <div class="modal-title">⚠️ Reportar Inconveniente</div>
-    <div class="modal-subtitle">Selecciona el motivo por el cual no se pudo entregar:</div>
+    <div class="modal-subtitle">Selecciona el motivo por el cual no se entrega:</div>
+
+    <button class="modal-action-btn" style="border-color: rgba(255, 149, 0, 0.4);" onclick="confirmarNoEntrega('📍 Fuera de zona / Descartada (+5 km)')">
+      <span>📍</span>
+      <strong>Fuera de zona / Descartar opcional</strong>
+    </button>
 
     <button class="modal-action-btn" onclick="confirmarNoEntrega('🏠 Nadie en el domicilio / Ausente')">
       <span>🏠</span>
       <strong>Nadie en el domicilio / Ausente</strong>
     </button>
 
-    <button class="modal-action-btn" onclick="confirmarNoEntrega('📍 Dirección incorrecta / No existe')">
-      <span>📍</span>
+    <button class="modal-action-btn" onclick="confirmarNoEntrega('🔍 Dirección incorrecta / No existe')">
+      <span>🔍</span>
       <strong>Dirección incorrecta / No existe</strong>
     </button>
 
@@ -1040,18 +1045,13 @@ REGLAS DE IDENTIFICACIÓN:
 3. "calle": Calle, altura y datos complementarios como piso, departamento, timbre o lote (ejemplo: "Av. Rivadavia 1234 4°B" o "Barrio Los Alamos Lote 12").
 4. "localidad": Localidad, ciudad o barrio.
 
-REGLA DE PUNTOS AISLADOS (OUTLIERS):
-- Si hay un grupo de paradas en una ciudad y otro grupo en otra ciudad (incluso a 10 km), AMBOS GRUPOS SON VÁLIDOS ("fueraDeZona": false).
-- Marca "fueraDeZona": true ÚNICAMENTE si hay 1 o 2 entregas solitarias totalmente huérfanas y aisladas a más de 5 km de cualquier otra parada.
-
 Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
 [
   {
     "paquete": "19",
     "remitente": "Nombre y Apellido",
     "calle": "Calle 123 2° A",
-    "localidad": "Localidad",
-    "fueraDeZona": false
+    "localidad": "Localidad"
   }
 ]`;
 
@@ -1097,7 +1097,7 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
 
       const entregasCrudas = JSON.parse(rawText);
 
-      updateStep(2, 60, "Geolocalizando y analizando distancias...");
+      updateStep(2, 60, "Geolocalizando e identificando opcionales...");
 
       const vistos = new Set();
       const puntos = [];
@@ -1128,7 +1128,7 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
             localidad: loc,
             lat: null,
             lng: null,
-            fueraDeZona: false
+            esOpcional: false
           });
         }
       }
@@ -1141,31 +1141,11 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
         }
       }));
 
-      const puntosConCoords = puntos.filter(p => p.lat !== null && p.lng !== null);
-      if (puntosConCoords.length > 2) {
-        puntos.forEach(p => {
-          if (p.lat !== null && p.lng !== null) {
-            let minDist = Infinity;
-            puntosConCoords.forEach(otro => {
-              if (p !== otro) {
-                const dist = calcularDistanciaKm(p.lat, p.lng, otro.lat, otro.lng);
-                if (dist < minDist) minDist = dist;
-              }
-            });
-            if (minDist > 5.0 && minDist !== Infinity) {
-              p.fueraDeZona = true;
-            }
-          }
-        });
-      }
-
       updateStep(3, 85, "Armando secuencia continua por cercanía...");
 
-      const validos = puntos.filter(p => !p.fueraDeZona);
-      const descartados = puntos.filter(p => p.fueraDeZona);
-
+      // Algoritmo TSP: Nearest Neighbor partiendo del GPS del furgón
       let rutaOrdenada = [];
-      let noVisitados = [...validos];
+      let noVisitados = [...puntos];
       let currentPos = userCoords;
 
       while (noVisitados.length > 0) {
@@ -1195,6 +1175,12 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
         });
 
         const proximo = noVisitados.splice(bestIndex, 1)[0];
+        
+        // Si el salto hacia este punto es mayor a 5 km, se marca como OPCIONAL
+        if (bestDistance > 5.0 && bestDistance !== Infinity) {
+          proximo.esOpcional = true;
+        }
+
         rutaOrdenada.push(proximo);
         currentPos = proximo;
       }
@@ -1205,7 +1191,7 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
       setTimeout(() => {
         document.getElementById('progressBox').style.display = 'none';
         document.getElementById('btnOptionsDots').style.display = 'inline-flex';
-        configurarRuta(rutaOrdenada, descartados);
+        configurarRuta(rutaOrdenada);
       }, 400);
 
     } catch (err) {
@@ -1215,7 +1201,7 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
     }
   }
 
-  function configurarRuta(rutaOptimizada, descartadosNuevos = []) {
+  function configurarRuta(rutaOptimizada) {
     if (modoAnexo && ruta.length > 0) {
       const yaEntregados = ruta.slice(0, currentIndex);
       const pendientes = ruta.slice(currentIndex);
@@ -1226,8 +1212,6 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
       currentIndex = 0;
       historialAcciones = [];
     }
-
-    novedades = descartadosNuevos.map(d => ({ ...d, motivo: "Punto aislado (> 5 km de otras paradas)", esAislado: true }));
 
     actualizarBotonRutaMaps();
     guardarEstado();
@@ -1244,91 +1228,17 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
 
   function renderNovedades() {
     const issuesList = document.getElementById('issuesList');
-    const btnInc = document.getElementById('btnIncorporar');
-
     if (novedades.length > 0) {
-      issuesList.innerHTML = novedades.map((n, idx) => {
-        if (n.esAislado) {
-          return `
-          <div class="isolated-row">
-            <input type="checkbox" class="isolated-checkbox" data-idx="${idx}" onchange="actualizarBotonIncorporar()" />
-            <div style="flex:1;">
-              <strong>#${n.paquete}</strong> • ${n.direccion}<br>
-              <span style="color: var(--danger); font-size: 13px;">${n.motivo}</span>
-            </div>
-          </div>`;
-        } else {
-          return `
-          <div style="margin-bottom: 8px;">
-            <strong>#${n.paquete}</strong> • ${n.direccion}<br>
-            <span style="color: var(--danger); font-size: 13px;">${n.motivo}</span>
-          </div>`;
-        }
-      }).join('');
+      issuesList.innerHTML = novedades.map(n => `
+        <div style="margin-bottom: 8px;">
+          <strong>#${n.paquete}</strong> • ${n.direccion}<br>
+          <span style="color: var(--danger); font-size: 13px;">${n.motivo}</span>
+        </div>`
+      ).join('');
       document.getElementById('issuesSection').style.display = 'block';
     } else {
       document.getElementById('issuesSection').style.display = 'none';
     }
-    actualizarBotonIncorporar();
-  }
-
-  function actualizarBotonIncorporar() {
-    const checks = document.querySelectorAll('.isolated-checkbox:checked');
-    const btn = document.getElementById('btnIncorporar');
-    if (checks.length > 0) {
-      btn.style.display = 'inline-flex';
-      btn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Incorporar (${checks.length}) a la ruta`;
-    } else {
-      btn.style.display = 'none';
-    }
-  }
-
-  function incorporarAisladosSeleccionados() {
-    const checks = document.querySelectorAll('.isolated-checkbox:checked');
-    if (checks.length === 0) return;
-
-    const indicesSeleccionados = Array.from(checks).map(c => parseInt(c.getAttribute('data-idx'), 10)).sort((a, b) => b - a);
-    const paquetesAIncorporar = [];
-
-    indicesSeleccionados.forEach(idx => {
-      const p = novedades.splice(idx, 1)[0];
-      delete p.motivo;
-      delete p.esAislado;
-      p.fueraDeZona = false;
-      paquetesAIncorporar.push(p);
-    });
-
-    // Inserción en la posición de menor desvío de la lista pendiente
-    const entregados = ruta.slice(0, currentIndex);
-    let pendientes = ruta.slice(currentIndex);
-
-    paquetesAIncorporar.forEach(paq => {
-      if (pendientes.length === 0) {
-        pendientes.push(paq);
-      } else if (paq.lat && paq.lng) {
-        let bestPos = 0;
-        let bestDist = Infinity;
-        pendientes.forEach((item, idx) => {
-          if (item.lat && item.lng) {
-            const d = calcularDistanciaKm(paq.lat, paq.lng, item.lat, item.lng);
-            if (d < bestDist) {
-              bestDist = d;
-              bestPos = idx;
-            }
-          }
-        });
-        pendientes.splice(bestPos + 1, 0, paq);
-      } else {
-        pendientes.push(paq);
-      }
-    });
-
-    ruta = [...entregados, ...pendientes];
-
-    actualizarBotonRutaMaps();
-    guardarEstado();
-    renderNovedades();
-    actualizarVista(false);
   }
 
   function actualizarVista(cantarPorVoz = true) {
@@ -1360,34 +1270,53 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
     document.getElementById('sumEta').innerText = horaTexto24 + ' hs';
 
     const cur = ruta[currentIndex];
+    const cardEl = document.getElementById('currentCard');
+    const badgeEl = document.getElementById('curBadge');
+    const btnMapsEl = document.getElementById('btnMaps');
+
+    // Adaptación visual según si es parada normal u opcional (+5 km)
+    if (cur.esOpcional) {
+      cardEl.className = 'card card-current card-optional';
+      badgeEl.className = 'delivery-badge badge-optional';
+      badgeEl.innerText = 'Parada Opcional (+5 km)';
+      btnMapsEl.className = 'btn btn-maps btn-maps-optional';
+    } else {
+      cardEl.className = 'card card-current';
+      badgeEl.className = 'delivery-badge';
+      badgeEl.innerText = 'Próxima Parada';
+      btnMapsEl.className = 'btn btn-maps';
+    }
     
     document.getElementById('curPkg').innerText = `#${cur.paquete}`;
     document.getElementById('curAddress').innerText = cur.direccion;
     document.getElementById('curName').innerText = cur.remitente;
 
     const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(cur.direccionBusqueda || cur.direccion)}`;
-    document.getElementById('btnMaps').href = mapsUrl;
-    document.getElementById('currentCard').style.display = 'block';
+    btnMapsEl.href = mapsUrl;
+    cardEl.style.display = 'block';
 
     const queueList = document.getElementById('queueList');
     const siguientes = ruta.slice(currentIndex + 1);
     if (siguientes.length > 0) {
-      queueList.innerHTML = siguientes.map(s => `
+      queueList.innerHTML = siguientes.map(s => {
+        const tagOpcional = s.esOpcional ? `<span class="stop-opt-tag">Opcional +5km</span>` : '';
+        return `
         <div class="stop-row">
           <div class="stop-num">#${s.paquete}</div>
           <div class="stop-info">
-            <div class="stop-addr">${s.direccion}</div>
+            <div class="stop-addr">${s.direccion} ${tagOpcional}</div>
             <div class="stop-person">${s.remitente}</div>
           </div>
-        </div>`
-      ).join('');
+        </div>`;
+      }).join('');
       document.getElementById('nextSection').style.display = 'block';
     } else {
       document.getElementById('nextSection').style.display = 'none';
     }
 
     if (cantarPorVoz) {
-      hablarConRetraso(`Próxima parada, paquete número ${cur.paquete}. En ${cur.direccion}`, 550);
+      const prefijoVoz = cur.esOpcional ? "Parada opcional alejada. " : "Próxima parada, ";
+      hablarConRetraso(`${prefijoVoz}paquete número ${cur.paquete}. En ${cur.direccion}`, 550);
     }
   }
 
