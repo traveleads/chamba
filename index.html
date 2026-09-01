@@ -175,6 +175,7 @@
     }
 
     .btn svg { width: 22px; height: 22px; fill: currentColor; }
+    .btn-maps-main svg { width: 28px; height: 28px; fill: currentColor; }
     .icon-danger { fill: var(--danger) !important; transition: fill 0.2s ease; }
     input[type="file"] { display: none; }
 
@@ -303,7 +304,7 @@
     .pkg-icon-box svg { width: 100%; height: 100%; }
     .pkg-title { font-size: 44px; font-weight: 800; letter-spacing: -1.5px; color: var(--text-main); }
 
-    .address-title { font-size: 22px; font-weight: 700; line-height: 1.25; margin-bottom: 4px; color: var(--text-main); }
+    .address-title { font-size: 22px; font-weight: 700; line-height: 1.3; margin-bottom: 4px; color: var(--text-main); }
     .receiver-name { font-size: 16px; color: var(--text-muted); margin-bottom: 20px; font-weight: 500; }
 
     .section-title { font-size: 15px; font-weight: 600; color: var(--text-muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -478,10 +479,10 @@
     <div id="liveProgressBar" class="live-progress-bar"></div>
   </div>
 
-  <!-- Botón Ver recorrido con Flecha Curva de Ruta -->
+  <!-- Botón Ver recorrido con Camioncito de Envíos Gratis / Van más grande y estilizado -->
   <a id="btnAllMaps" class="btn btn-maps-main" target="_blank" style="display: none;">
-    <svg viewBox="0 0 24 24">
-      <path d="M11.5 8c2.65 0 5.05.99 6.9 2.6L22 7v9h-9l3.62-3.62C15.23 11.22 13.46 10.5 11.5 10.5c-3.54 0-6.55 2.31-7.6 5.5L1.53 15.22C2.92 11.03 6.85 8 11.5 8z"/>
+    <svg viewBox="0 0 28 28">
+      <path d="M2 5a1 1 0 0 1 1-1h15a1 1 0 0 1 1 1v13h-2.1a3.5 3.5 0 0 0-6.8 0H9.9a3.5 3.5 0 0 0-6.8 0H2V5zm17 5h4.2a1 1 0 0 1 .8.4l3.6 4.8a1 1 0 0 1 .2.6V18a1 1 0 0 1-1 1h-1.1a3.5 3.5 0 0 0-6.7 0H19V10zm1.5 2v3h4.6l-2.25-3H20.5zM6.5 21a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm14 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/>
     </svg>
     Ver recorrido
   </a>
@@ -535,6 +536,7 @@
     <div id="queueList"></div>
   </div>
 
+  <!-- Tarjeta de Novedades y Descartados -->
   <div id="issuesSection" class="card" style="display: none; border-color: rgba(255, 69, 58, 0.3);">
     <div class="section-title" style="color: var(--danger);">Novedades / Descartados</div>
     <div id="issuesList" style="font-size: 14px; line-height: 1.5;"></div>
@@ -1343,7 +1345,10 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
     }
     
     document.getElementById('curPkg').innerText = `#${cur.paquete}`;
-    document.getElementById('curAddress').innerText = cur.direccion;
+    
+    // Regla visual: doble espacio después de cada coma únicamente en la tarjeta
+    const direccionConDobleEspacio = String(cur.direccion || '').replace(/,\s*/g, ',  ');
+    document.getElementById('curAddress').innerText = direccionConDobleEspacio;
     document.getElementById('curName').innerText = cur.remitente;
 
     const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(cur.direccionBusqueda || cur.direccion)}`;
