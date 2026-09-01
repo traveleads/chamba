@@ -331,6 +331,7 @@
       margin-left: 6px;
     }
 
+    /* Modales */
     .modal-overlay {
       display: none;
       position: fixed;
@@ -478,26 +479,20 @@
     <div id="liveProgressBar" class="live-progress-bar"></div>
   </div>
 
-  <!-- Botón Ver recorrido con Camión de Envíos Rápidos Vectorizado Fiel a la Imagen -->
+  <!-- Botón Ver recorrido con Camión de Base Plana Proporcionado -->
   <a id="btnAllMaps" class="btn btn-maps-main" target="_blank" style="display: none;">
-    <svg viewBox="0 0 100 100" style="overflow: visible;">
-      <!-- Estelas de velocidad redondeadas -->
-      <rect x="5" y="24" width="22" height="6" rx="3" fill="currentColor"/>
-      <rect x="10" y="38" width="18" height="6" rx="3" fill="currentColor"/>
-      <rect x="0" y="52" width="30" height="6" rx="3" fill="currentColor"/>
-      <rect x="7" y="66" width="20" height="6" rx="3" fill="currentColor"/>
-      <rect x="15" y="78" width="10" height="6" rx="3" fill="currentColor"/>
-      <!-- Caja de carga con bordes redondeados -->
-      <path d="M30 18 h38 a6 6 0 0 1 6 6 v46 h-7 a13 13 0 0 0 -26 0 h-11 v-46 a6 6 0 0 1 6 -6 z" fill="currentColor"/>
-      <!-- Cabina aerodinámica -->
-      <path d="M75 32 h12 a5 5 0 0 1 4 2 l10 13 a6 6 0 0 1 2 4 v19 a4 4 0 0 1 -4 4 h-5 a13 13 0 0 0 -26 0 v-38 a4 4 0 0 1 4 -4 z" fill="currentColor"/>
+    <svg viewBox="0 0 32 32">
+      <!-- Estelas de velocidad -->
+      <path d="M2 9h4M1 14h6M3 19h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <!-- Caja de carga plana con esquinas superiores curvas -->
+      <path d="M8 7h12a2 2 0 0 1 2 2v14H8a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z"/>
+      <!-- Cabina de camión -->
+      <path d="M22 11h4a2 2 0 0 1 1.6.8l3 4.2c.3.4.4.9.4 1.4V22a1 1 0 0 1-1 1h-8v-11z"/>
       <!-- Ventana de cabina -->
-      <path d="M79 38 h7 a2 2 0 0 1 1.7 1 l6 8 a2 2 0 0 1 .3 1 v3 a2 2 0 0 1 -2 2 h-13 a2 2 0 0 1 -2 -2 v-11 a2 2 0 0 1 2 -2 z" fill="#5856D6"/>
-      <!-- Ruedas -->
-      <circle cx="48" cy="74" r="11" fill="currentColor"/>
-      <circle cx="48" cy="74" r="5" fill="#5856D6"/>
-      <circle cx="85" cy="74" r="11" fill="currentColor"/>
-      <circle cx="85" cy="74" r="5" fill="#5856D6"/>
+      <path d="M23 13h3.2l2 2.8H23v-2.8z" fill="#5856D6"/>
+      <!-- Ruedas integradas -->
+      <circle cx="12" cy="23" r="3.2" fill="#1C1C1E" stroke="#FFFFFF" stroke-width="1.2"/>
+      <circle cx="26" cy="23" r="3.2" fill="#1C1C1E" stroke="#FFFFFF" stroke-width="1.2"/>
     </svg>
     Ver recorrido
   </a>
@@ -551,6 +546,7 @@
     <div id="queueList"></div>
   </div>
 
+  <!-- Tarjeta de Novedades y Descartados -->
   <div id="issuesSection" class="card" style="display: none; border-color: rgba(255, 69, 58, 0.3);">
     <div class="section-title" style="color: var(--danger);">Novedades / Descartados</div>
     <div id="issuesList" style="font-size: 14px; line-height: 1.5;"></div>
