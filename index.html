@@ -141,7 +141,6 @@
     .btn-secondary { background: rgba(10, 132, 255, 0.15); color: var(--accent); box-shadow: none; border: 1px dashed var(--accent); }
     .btn-maps { background: var(--maps-color); color: #FFFFFF; }
     
-    /* Botones de acción neutros */
     .btn-action-neutral {
       background: var(--bg);
       color: var(--text-main);
@@ -167,8 +166,24 @@
       margin-top: 4px;
       margin-bottom: 16px;
     }
+
+    .btn-incorporar {
+      background: rgba(88, 86, 214, 0.12);
+      color: var(--maps-color);
+      border: 1px solid var(--maps-color);
+      font-size: 15px;
+      padding: 12px 16px;
+      border-radius: 14px;
+      box-shadow: none;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .btn-incorporar:active {
+      background: var(--maps-color);
+      color: #FFFFFF;
+    }
+
     .btn svg { width: 22px; height: 22px; fill: currentColor; }
-    .btn-maps svg { width: 26px; height: 26px; fill: currentColor; }
     .icon-danger { fill: var(--danger) !important; transition: fill 0.2s ease; }
     input[type="file"] { display: none; }
 
@@ -299,6 +314,22 @@
     .stop-info { flex: 1; }
     .stop-addr { font-weight: 600; font-size: 15px; }
     .stop-person { font-size: 13px; color: var(--text-muted); }
+
+    /* Fila de Aislados con Checkbox de selección */
+    .isolated-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .isolated-row:last-child { border-bottom: none; }
+    .isolated-checkbox {
+      width: 22px;
+      height: 22px;
+      accent-color: var(--maps-color);
+      cursor: pointer;
+    }
 
     .modal-overlay {
       display: none;
@@ -432,22 +463,9 @@
     <div id="liveProgressBar" class="live-progress-bar"></div>
   </div>
 
-  <!-- Botón Ruta General con Ícono de Furgón de Reparto en Alta Calidad -->
+  <!-- Botón Ruta General con Pin de Maps clásico -->
   <a id="btnAllMaps" class="btn btn-maps" target="_blank" style="display: none;">
-    <svg viewBox="0 0 32 32" style="fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round;">
-      <!-- Líneas de velocidad traseras -->
-      <line x1="2" y1="11" x2="6" y2="11" stroke-width="2"/>
-      <line x1="1" y1="16" x2="7" y2="16" stroke-width="2"/>
-      <line x1="3" y1="21" x2="6" y2="21" stroke-width="2"/>
-      <!-- Carrocería del furgón -->
-      <path d="M8 8h12v14h-2a3 3 0 0 1-6 0h-3a3 3 0 0 1-6 0v-9a5 5 0 0 1 5-5z" fill="currentColor" opacity="0.95" stroke-width="0"/>
-      <path d="M20 10h4l3 4v8h-3a3 3 0 0 1-6 0v-12z" fill="currentColor" opacity="0.95" stroke-width="0"/>
-      <!-- Ventana de cabina -->
-      <polygon points="21,12 24.5,12 26,14.5 21,14.5" fill="#5856D6" stroke-width="0"/>
-      <!-- Ruedas -->
-      <circle cx="11" cy="22" r="2.5" fill="#1C1C1E" stroke="#FFF" stroke-width="1.5"/>
-      <circle cx="23" cy="22" r="2.5" fill="#1C1C1E" stroke="#FFF" stroke-width="1.5"/>
-    </svg>
+    <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
     Ruta General en Maps
   </a>
 
@@ -500,6 +518,13 @@
     <div id="queueList"></div>
   </div>
 
+  <!-- Botón dinámico para incorporar aislados seleccionados -->
+  <button id="btnIncorporar" class="btn btn-incorporar" onclick="incorporarAisladosSeleccionados()">
+    <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+    Incorporar seleccionados a la ruta
+  </button>
+
+  <!-- Tarjeta de Aislados / Novedades -->
   <div id="issuesSection" class="card" style="display: none; border-color: rgba(255, 69, 58, 0.3);">
     <div class="section-title" style="color: var(--danger);">Aislados (> 5 km) / Novedades</div>
     <div id="issuesList" style="font-size: 14px; line-height: 1.5;"></div>
@@ -1202,7 +1227,7 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
       historialAcciones = [];
     }
 
-    novedades = descartadosNuevos.map(d => ({ ...d, motivo: "Punto aislado (> 5 km de otras paradas)" }));
+    novedades = descartadosNuevos.map(d => ({ ...d, motivo: "Punto aislado (> 5 km de otras paradas)", esAislado: true }));
 
     actualizarBotonRutaMaps();
     guardarEstado();
@@ -1218,18 +1243,92 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
   }
 
   function renderNovedades() {
+    const issuesList = document.getElementById('issuesList');
+    const btnInc = document.getElementById('btnIncorporar');
+
     if (novedades.length > 0) {
-      const issuesList = document.getElementById('issuesList');
-      issuesList.innerHTML = novedades.map(n => `
-        <div style="margin-bottom: 8px;">
-          <strong>#${n.paquete}</strong> • ${n.direccion}<br>
-          <span style="color: var(--danger); font-size: 13px;">${n.motivo}</span>
-        </div>`
-      ).join('');
+      issuesList.innerHTML = novedades.map((n, idx) => {
+        if (n.esAislado) {
+          return `
+          <div class="isolated-row">
+            <input type="checkbox" class="isolated-checkbox" data-idx="${idx}" onchange="actualizarBotonIncorporar()" />
+            <div style="flex:1;">
+              <strong>#${n.paquete}</strong> • ${n.direccion}<br>
+              <span style="color: var(--danger); font-size: 13px;">${n.motivo}</span>
+            </div>
+          </div>`;
+        } else {
+          return `
+          <div style="margin-bottom: 8px;">
+            <strong>#${n.paquete}</strong> • ${n.direccion}<br>
+            <span style="color: var(--danger); font-size: 13px;">${n.motivo}</span>
+          </div>`;
+        }
+      }).join('');
       document.getElementById('issuesSection').style.display = 'block';
     } else {
       document.getElementById('issuesSection').style.display = 'none';
     }
+    actualizarBotonIncorporar();
+  }
+
+  function actualizarBotonIncorporar() {
+    const checks = document.querySelectorAll('.isolated-checkbox:checked');
+    const btn = document.getElementById('btnIncorporar');
+    if (checks.length > 0) {
+      btn.style.display = 'inline-flex';
+      btn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Incorporar (${checks.length}) a la ruta`;
+    } else {
+      btn.style.display = 'none';
+    }
+  }
+
+  function incorporarAisladosSeleccionados() {
+    const checks = document.querySelectorAll('.isolated-checkbox:checked');
+    if (checks.length === 0) return;
+
+    const indicesSeleccionados = Array.from(checks).map(c => parseInt(c.getAttribute('data-idx'), 10)).sort((a, b) => b - a);
+    const paquetesAIncorporar = [];
+
+    indicesSeleccionados.forEach(idx => {
+      const p = novedades.splice(idx, 1)[0];
+      delete p.motivo;
+      delete p.esAislado;
+      p.fueraDeZona = false;
+      paquetesAIncorporar.push(p);
+    });
+
+    // Inserción en la posición de menor desvío de la lista pendiente
+    const entregados = ruta.slice(0, currentIndex);
+    let pendientes = ruta.slice(currentIndex);
+
+    paquetesAIncorporar.forEach(paq => {
+      if (pendientes.length === 0) {
+        pendientes.push(paq);
+      } else if (paq.lat && paq.lng) {
+        let bestPos = 0;
+        let bestDist = Infinity;
+        pendientes.forEach((item, idx) => {
+          if (item.lat && item.lng) {
+            const d = calcularDistanciaKm(paq.lat, paq.lng, item.lat, item.lng);
+            if (d < bestDist) {
+              bestDist = d;
+              bestPos = idx;
+            }
+          }
+        });
+        pendientes.splice(bestPos + 1, 0, paq);
+      } else {
+        pendientes.push(paq);
+      }
+    });
+
+    ruta = [...entregados, ...pendientes];
+
+    actualizarBotonRutaMaps();
+    guardarEstado();
+    renderNovedades();
+    actualizarVista(false);
   }
 
   function actualizarVista(cantarPorVoz = true) {
