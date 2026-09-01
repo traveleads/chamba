@@ -524,8 +524,57 @@
   let modoAnexo = false;
   let cachedVoices = [];
   let userCoords = null;
+  let audioCtx = null;
 
   const SVG_GEAR = `<svg class="spin-gear" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>`;
+
+  /* Generador de sonido de tecla/tap táctil moderno */
+  function playKeyClick() {
+    try {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) audioCtx = new AudioContextClass();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      if (audioCtx) {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        const now = audioCtx.currentTime;
+
+        // Frecuencia corta con caída rápida (simula click de teclado de smartphone)
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, now);
+        osc.frequency.exponentialRampToValueAtTime(120, now + 0.018);
+
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.018);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.02);
+      }
+    } catch (e) {
+      // Audio no bloqueante
+    }
+
+    // Micro-vibración háptica si el dispositivo lo soporta
+    if ("vibrate" in navigator) {
+      try { navigator.vibrate(12); } catch (e) {}
+    }
+  }
+
+  function vincularSonidosBotones() {
+    document.addEventListener('click', (e) => {
+      const target = e.target.closest('button, .btn, .modal-action-btn, .modal-cancel-btn');
+      if (target) {
+        playKeyClick();
+      }
+    }, true);
+  }
 
   function saveApiKey() {
     const val = document.getElementById('apiKeyInput').value.trim();
@@ -541,6 +590,7 @@
     ajustarSaludo();
     cargarVoces();
     solicitarGPS();
+    vincularSonidosBotones();
 
     if ('speechSynthesis' in window) {
       window.speechSynthesis.onvoiceschanged = cargarVoces;
@@ -957,7 +1007,6 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
           ? `${calleCompleta}, ${loc}` 
           : calleCompleta;
 
-        // Limpia piso/departamento para la búsqueda en mapas para evitar fallos de ubicación
         const calleLimpiaGps = calleCompleta.replace(/(\d+)\s*(piso|p\.|°|dto|dpto|depto|depto\.|lote|casa|torre|timbre).*$/i, '$1').trim();
         const direccionGps = loc && !calleLimpiaGps.toLowerCase().includes(loc.toLowerCase())
           ? `${calleLimpiaGps}, ${loc}`
@@ -970,8 +1019,8 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
           puntos.push({
             paquete: cleanPkg || (puntos.length + 1).toString(),
             remitente: String(e.remitente || 'Destinatario').trim(),
-            direccion: fullAddress, // Se muestra en pantalla con piso/depto
-            direccionBusqueda: direccionGps, // Se usa para geolocalizar
+            direccion: fullAddress,
+            direccionBusqueda: direccionGps,
             localidad: loc,
             lat: null,
             lng: null,
