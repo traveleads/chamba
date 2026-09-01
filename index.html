@@ -335,7 +335,6 @@
       margin-left: 6px;
     }
 
-    /* Modales de Alto Contraste y Fácil Lectura */
     .modal-overlay {
       display: none;
       position: fixed;
@@ -483,7 +482,6 @@
     <div id="liveProgressBar" class="live-progress-bar"></div>
   </div>
 
-  <!-- Botón Ruta General con Pin de Maps clásico -->
   <a id="btnAllMaps" class="btn btn-maps" target="_blank" style="display: none;">
     <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
     Ruta General en Maps
@@ -538,14 +536,13 @@
     <div id="queueList"></div>
   </div>
 
-  <!-- Tarjeta de Novedades y Descartados -->
   <div id="issuesSection" class="card" style="display: none; border-color: rgba(255, 69, 58, 0.3);">
     <div class="section-title" style="color: var(--danger);">Novedades / Descartados</div>
     <div id="issuesList" style="font-size: 14px; line-height: 1.5;"></div>
   </div>
 </div>
 
-<!-- Modal 1: Opciones de Jornada (Alto Contraste) -->
+<!-- Modal 1: Opciones de Jornada -->
 <div id="modalOpciones" class="modal-overlay">
   <div class="modal-card">
     <div class="modal-title">⚙️ Opciones de Jornada</div>
@@ -579,13 +576,14 @@
   </div>
 </div>
 
-<!-- Modal 2: Motivos de No Entrega (Alto Contraste) -->
+<!-- Modal 2: Motivos de No Entrega (Dinámico e Inteligente) -->
 <div id="modalNoEntrega" class="modal-overlay">
   <div class="modal-card">
     <div class="modal-title">⚠️ Reportar Inconveniente</div>
     <div class="modal-subtitle">Selecciona el motivo para registrar la novedad:</div>
 
-    <button class="modal-action-btn modal-btn-warning" onclick="confirmarNoEntrega('📍 Fuera de zona / Descartada (+5 km)')">
+    <!-- Botón Fuera de Zona: Solo visible cuando la parada es Opcional (+5km) -->
+    <button id="btnModalFueraZona" class="modal-action-btn modal-btn-warning" style="display: none;" onclick="confirmarNoEntrega('📍 Fuera de zona / Descartada (+5 km)')">
       <span style="font-size: 24px;">📍</span>
       <span style="font-size: 17px; font-weight: 700; color: #B36B00;">Fuera de zona / Descartar opcional</span>
     </button>
@@ -790,6 +788,16 @@
 
   function abrirModalNoEntregado() {
     document.getElementById('customReasonInput').value = '';
+    
+    // Condición inteligente: botón fuera de zona solo visible si la parada actual es opcional (+5km)
+    const cur = ruta[currentIndex];
+    const btnFueraZona = document.getElementById('btnModalFueraZona');
+    if (cur && cur.esOpcional) {
+      btnFueraZona.style.display = 'flex';
+    } else {
+      btnFueraZona.style.display = 'none';
+    }
+
     document.getElementById('modalNoEntrega').style.display = 'flex';
   }
 
@@ -908,6 +916,18 @@
     }
   }
 
+  // Sanitizador estricto de texto para voz: elimina "7° piso piso"
+  function normalizarTextoParaVoz(texto) {
+    let t = String(texto || '');
+    t = t.replace(/(\d+)\s*[°º]\s*(piso|p\.)/gi, 'piso $1');
+    t = t.replace(/(\d+)\s*[°º]/g, 'piso $1');
+    t = t.replace(/(\d+)\s*(mo|ro|to|er|do)\s*(piso|p\.)/gi, 'piso $1');
+    t = t.replace(/piso\s+(\d+)\s+piso/gi, 'piso $1');
+    t = t.replace(/\bpiso\s*piso\b/gi, 'piso');
+    t = t.replace(/\bdpto\b|\bdepto\b|\bdto\b/gi, 'departamento');
+    return t.replace(/\s+/g, ' ').trim();
+  }
+
   function hablarConRetraso(texto, delayMs = 550) {
     if (vozSilenciada) return;
     if (voiceTimer) clearTimeout(voiceTimer);
@@ -915,13 +935,7 @@
       if ('speechSynthesis' in window && !vozSilenciada) {
         window.speechSynthesis.cancel();
 
-        // Sanitización para evitar que diga "grados" en pisos y departamentos
-        let textoLimpio = texto
-          .replace(/(\d+)\s*[°º]\s*([a-zA-Z])/gi, '$1 piso $2')
-          .replace(/(\d+)\s*[°º]/g, 'piso $1 ')
-          .replace(/\bpiso\s*(\d+)/gi, 'piso $1')
-          .replace(/\bdpto\b|\bdepto\b|\bdto\b/gi, 'departamento');
-
+        const textoLimpio = normalizarTextoParaVoz(texto);
         const utterance = new SpeechSynthesisUtterance(textoLimpio);
         utterance.lang = 'es-AR';
         utterance.rate = 0.93;
@@ -1043,6 +1057,15 @@
     return str || "1";
   }
 
+  // Limpia visualmente las calles de la planilla para un formato prolijo
+  function normalizarTextoDireccion(addr) {
+    let a = String(addr || '').trim();
+    a = a.replace(/(\d+)\s*[°º]\s*(piso|p\.)/gi, 'Piso $1');
+    a = a.replace(/(\d+)\s*[°º]/g, 'Piso $1');
+    a = a.replace(/(\d+)\s*(mo|ro|to|er|do)\s*(piso|p\.)/gi, 'Piso $1');
+    return a.replace(/\s+/g, ' ').trim();
+  }
+
   function ordenarPorVecinoMasCercano(listaPuntos, puntoInicio) {
     let ordenados = [];
     let noVisitados = [...listaPuntos];
@@ -1109,7 +1132,7 @@
 REGLAS DE IDENTIFICACIÓN:
 1. "paquete": Extrae ÚNICAMENTE el número identificador limpio (ejemplo: si dice "P-019" devuelve "19").
 2. "remitente": Nombre y apellido del destinatario.
-3. "calle": Calle, altura y datos complementarios escritos como "Piso X Depto Y" (IMPORTANTE: NO uses símbolos de grados como "7°", escribe "Piso 7 Depto B" o "Lote 12").
+3. "calle": Calle, altura y complementos escritos prolijos como "Piso 7 Depto B" (NUNCA uses símbolos de grados como "7°", escribe "Piso 7 Depto B").
 4. "localidad": Localidad, ciudad o barrio.
 
 Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
@@ -1178,21 +1201,21 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
 
       for (const e of entregasCrudas) {
         const cleanPkg = sanitizarNumeroPaquete(e.paquete);
-        const calleCompleta = String(e.calle || e.direccion || '').trim();
+        const calleFormateada = normalizarTextoDireccion(e.calle || e.direccion || '');
         const loc = String(e.localidad || '').trim();
         
-        const fullAddress = loc && !calleCompleta.toLowerCase().includes(loc.toLowerCase()) 
-          ? `${calleCompleta}, ${loc}` 
-          : calleCompleta;
+        const fullAddress = loc && !calleFormateada.toLowerCase().includes(loc.toLowerCase()) 
+          ? `${calleFormateada}, ${loc}` 
+          : calleFormateada;
 
-        const calleLimpiaGps = calleCompleta.replace(/(\d+)\s*(piso|p\.|°|dto|dpto|depto|depto\.|lote|casa|torre|timbre).*$/i, '$1').trim();
+        const calleLimpiaGps = calleFormateada.replace(/(\d+)\s*(piso|p\.|dto|dpto|depto|depto\.|lote|casa|torre|timbre).*$/i, '$1').trim();
         const direccionGps = loc && !calleLimpiaGps.toLowerCase().includes(loc.toLowerCase())
           ? `${calleLimpiaGps}, ${loc}`
           : calleLimpiaGps;
 
         const key = (cleanPkg + '|' + fullAddress).toLowerCase();
 
-        if (!vistos.has(key) && calleCompleta.length > 2) {
+        if (!vistos.has(key) && calleFormateada.length > 2) {
           vistos.add(key);
           puntosNuevos.push({
             paquete: cleanPkg || (puntosNuevos.length + 1).toString(),
