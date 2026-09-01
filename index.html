@@ -18,14 +18,14 @@
       --bg: #F4F4F6;
       --card-bg: #FFFFFF;
       --text-main: #1C1C1E;
-      --text-muted: #8E8E93;
+      --text-muted: #6E6E73;
       --accent: #007AFF;
       --maps-color: #5856D6;
       --success: #34C759;
       --warning: #FF9500;
       --danger: #FF3B30;
-      --border-subtle: rgba(0, 0, 0, 0.08);
-      --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      --border-subtle: rgba(0, 0, 0, 0.12);
+      --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
       --btn-inner-light: inset 0 1px 0 rgba(255, 255, 255, 0.25);
       --card-focus-border: 2.5px solid var(--maps-color);
       --card-focus-glow: 0 6px 22px rgba(88, 86, 214, 0.28);
@@ -36,13 +36,13 @@
         --bg: #000000;
         --card-bg: #1C1C1E;
         --text-main: #F2F2F7;
-        --text-muted: #98989D;
+        --text-muted: #A1A1A6;
         --accent: #0A84FF;
         --maps-color: #5E5CE6;
         --success: #30D158;
         --warning: #FFD60A;
         --danger: #FF453A;
-        --border-subtle: rgba(255, 255, 255, 0.12);
+        --border-subtle: rgba(255, 255, 255, 0.16);
         --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
         --btn-inner-light: inset 0 1px 0 rgba(255, 255, 255, 0.1);
         --card-focus-border: 2.5px solid var(--maps-color);
@@ -68,8 +68,8 @@
       border: 1px solid var(--border-subtle);
       color: var(--text-main);
       border-radius: 12px;
-      width: 40px;
-      height: 40px;
+      width: 42px;
+      height: 42px;
       display: none;
       align-items: center;
       justify-content: center;
@@ -78,7 +78,7 @@
       transition: transform 0.1s ease;
     }
     .btn-options-dots:active { transform: scale(0.92); background: var(--border-subtle); }
-    .btn-options-dots svg { width: 20px; height: 20px; fill: currentColor; }
+    .btn-options-dots svg { width: 22px; height: 22px; fill: currentColor; }
 
     .welcome-card {
       background: var(--card-bg);
@@ -114,13 +114,11 @@
       transition: border-color 0.3s ease, box-shadow 0.3s ease;
     }
 
-    /* Brillo y resplandor calibrado en Violeta */
     .card-current {
       border: var(--card-focus-border);
       box-shadow: var(--card-focus-glow);
     }
 
-    /* Brillo y resplandor en Ámbar (+5km) */
     .card-optional {
       border: 2.5px solid var(--warning) !important;
       box-shadow: 0 6px 22px rgba(255, 149, 0, 0.28) !important;
@@ -156,10 +154,10 @@
     }
 
     .btn-action-neutral {
-      background: var(--bg);
+      background: var(--card-bg);
       color: var(--text-main);
-      border: 1px solid var(--border-subtle);
-      box-shadow: none;
+      border: 1.5px solid var(--border-subtle);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
     }
     .btn-action-neutral:active, .btn-action-neutral.active-success {
       background: var(--success);
@@ -337,52 +335,68 @@
       margin-left: 6px;
     }
 
+    /* Modales de Alto Contraste y Fácil Lectura */
     .modal-overlay {
       display: none;
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.6);
-      backdrop-filter: blur(4px);
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(6px);
       z-index: 1000;
       align-items: flex-end;
       justify-content: center;
-      padding-bottom: 20px;
+      padding-bottom: 24px;
     }
     .modal-card {
       background: var(--card-bg);
-      width: 92%;
+      width: 94%;
       max-width: 440px;
       border-radius: 24px;
-      padding: 24px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-      border: 1px solid var(--border-subtle);
+      padding: 24px 20px;
+      box-shadow: 0 14px 38px rgba(0,0,0,0.35);
+      border: 1.5px solid var(--border-subtle);
     }
-    .modal-title { font-size: 19px; font-weight: 800; margin-bottom: 8px; text-align: center; }
+    .modal-title { font-size: 20px; font-weight: 800; margin-bottom: 6px; text-align: center; }
     .modal-subtitle { font-size: 14px; color: var(--text-muted); margin-bottom: 18px; text-align: center; }
+    
     .modal-action-btn {
       display: flex;
       align-items: center;
-      justify-content: flex-start;
-      gap: 12px;
+      gap: 14px;
       width: 100%;
-      padding: 15px 16px;
-      border-radius: 16px;
-      font-size: 16px;
+      padding: 17px 18px;
+      border-radius: 18px;
+      font-size: 17px;
       font-weight: 600;
       cursor: pointer;
-      border: 1px solid var(--border-subtle);
+      border: 1.5px solid var(--border-subtle);
       background: var(--bg);
       color: var(--text-main);
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       text-align: left;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+      transition: transform 0.1s ease, border-color 0.2s ease;
     }
-    .modal-action-btn:active { background: var(--border-subtle); transform: scale(0.98); }
+    .modal-action-btn:active { transform: scale(0.98); background: var(--border-subtle); }
+    
+    .modal-btn-warning {
+      border: 2px solid var(--warning) !important;
+      background: rgba(255, 149, 0, 0.08) !important;
+    }
+    .modal-btn-maps {
+      border: 1.8px solid rgba(88, 86, 214, 0.5) !important;
+    }
+    .modal-btn-danger {
+      border: 1.8px solid rgba(255, 59, 48, 0.4) !important;
+      color: var(--danger) !important;
+    }
+
     .modal-input {
       width: 100%;
-      padding: 12px;
-      border-radius: 12px;
-      border: 1px solid var(--border-subtle);
-      font-size: 14px;
+      padding: 14px;
+      border-radius: 14px;
+      border: 1.5px solid var(--border-subtle);
+      font-size: 15px;
       margin-top: 6px;
       margin-bottom: 14px;
       outline: none;
@@ -391,9 +405,9 @@
     }
     .modal-cancel-btn {
       width: 100%;
-      padding: 14px;
+      padding: 15px;
       border-radius: 14px;
-      font-size: 15px;
+      font-size: 16px;
       font-weight: 600;
       cursor: pointer;
       border: none;
@@ -531,33 +545,33 @@
   </div>
 </div>
 
-<!-- Modal 1: Opciones de Jornada -->
+<!-- Modal 1: Opciones de Jornada (Alto Contraste) -->
 <div id="modalOpciones" class="modal-overlay">
   <div class="modal-card">
     <div class="modal-title">⚙️ Opciones de Jornada</div>
-    <div class="modal-subtitle">Configuración y gestión del recorrido actual:</div>
+    <div class="modal-subtitle">Configuración y gestión del recorrido de hoy:</div>
     
-    <button class="modal-action-btn" onclick="toggleVozGuia()">
-      <span id="optVoiceIcon" style="font-size: 22px;">🔊</span>
-      <div>
-        <strong id="optVoiceTitle">Voz guía activada</strong>
-        <div id="optVoiceDesc" style="font-size: 13px; color: var(--text-muted); font-weight: normal;">Toca para silenciar los anuncios por voz</div>
+    <button class="modal-action-btn modal-btn-maps" onclick="toggleVozGuia()">
+      <span id="optVoiceIcon" style="font-size: 26px;">🔊</span>
+      <div style="flex:1;">
+        <div id="optVoiceTitle" style="font-size: 17px; font-weight: 700;">Voz guía activada</div>
+        <div id="optVoiceDesc" style="font-size: 13px; color: var(--text-muted); font-weight: normal; margin-top: 2px;">Toca para silenciar los anuncios por voz</div>
       </div>
     </button>
 
-    <button class="modal-action-btn" onclick="ejecutarOpcionAnexo()">
-      <span style="font-size: 22px;">📄</span>
-      <div>
-        <strong>Agregar más hojas</strong>
-        <div style="font-size: 13px; color: var(--text-muted); font-weight: normal;">Suma paquetes nuevos y re-traza la mejor ruta</div>
+    <button class="modal-action-btn modal-btn-maps" onclick="ejecutarOpcionAnexo()">
+      <span style="font-size: 26px;">📄</span>
+      <div style="flex:1;">
+        <div style="font-size: 17px; font-weight: 700;">Agregar más hojas</div>
+        <div style="font-size: 13px; color: var(--text-muted); font-weight: normal; margin-top: 2px;">Suma paquetes y re-optimiza la ruta continua</div>
       </div>
     </button>
 
-    <button class="modal-action-btn" style="color: var(--danger); border-color: rgba(255,59,48,0.3);" onclick="ejecutarOpcionReinicio()">
-      <span style="font-size: 22px;">🗑️</span>
-      <div>
-        <strong>Empezar de cero (Nuevo día)</strong>
-        <div style="font-size: 13px; color: var(--danger); font-weight: normal;">Borra todos los datos y limpia el recorrido</div>
+    <button class="modal-action-btn modal-btn-danger" onclick="ejecutarOpcionReinicio()">
+      <span style="font-size: 26px;">🗑️</span>
+      <div style="flex:1;">
+        <div style="font-size: 17px; font-weight: 700;">Empezar de cero (Nuevo día)</div>
+        <div style="font-size: 13px; color: var(--danger); font-weight: normal; margin-top: 2px;">Borra todos los datos y limpia el recorrido</div>
       </div>
     </button>
 
@@ -565,36 +579,36 @@
   </div>
 </div>
 
-<!-- Modal 2: Motivos de No Entrega -->
+<!-- Modal 2: Motivos de No Entrega (Alto Contraste) -->
 <div id="modalNoEntrega" class="modal-overlay">
   <div class="modal-card">
     <div class="modal-title">⚠️ Reportar Inconveniente</div>
-    <div class="modal-subtitle">Selecciona el motivo por el cual no se entrega:</div>
+    <div class="modal-subtitle">Selecciona el motivo para registrar la novedad:</div>
 
-    <button class="modal-action-btn" style="border-color: rgba(255, 149, 0, 0.4);" onclick="confirmarNoEntrega('📍 Fuera de zona / Descartada (+5 km)')">
-      <span>📍</span>
-      <strong>Fuera de zona / Descartar opcional</strong>
+    <button class="modal-action-btn modal-btn-warning" onclick="confirmarNoEntrega('📍 Fuera de zona / Descartada (+5 km)')">
+      <span style="font-size: 24px;">📍</span>
+      <span style="font-size: 17px; font-weight: 700; color: #B36B00;">Fuera de zona / Descartar opcional</span>
     </button>
 
     <button class="modal-action-btn" onclick="confirmarNoEntrega('🏠 Nadie en el domicilio / Ausente')">
-      <span>🏠</span>
-      <strong>Nadie en el domicilio / Ausente</strong>
+      <span style="font-size: 24px;">🏠</span>
+      <span style="font-size: 17px; font-weight: 600;">Nadie en el domicilio / Ausente</span>
     </button>
 
     <button class="modal-action-btn" onclick="confirmarNoEntrega('🔍 Dirección incorrecta / No existe')">
-      <span>🔍</span>
-      <strong>Dirección incorrecta / No existe</strong>
+      <span style="font-size: 24px;">🔍</span>
+      <span style="font-size: 17px; font-weight: 600;">Dirección incorrecta / No existe</span>
     </button>
 
     <button class="modal-action-btn" onclick="confirmarNoEntrega('🚫 Rechazado por el cliente')">
-      <span>🚫</span>
-      <strong>Rechazado por el cliente</strong>
+      <span style="font-size: 24px;">🚫</span>
+      <span style="font-size: 17px; font-weight: 600;">Rechazado por el cliente</span>
     </button>
 
-    <div style="margin-top: 10px; font-size: 13px; color: var(--text-muted); font-weight: 600;">Otras observaciones (opcional):</div>
+    <div style="margin-top: 8px; font-size: 13px; color: var(--text-muted); font-weight: 600;">Otras observaciones (opcional):</div>
     <input type="text" id="customReasonInput" class="modal-input" placeholder="Ej: No tiene timbre, portón cerrado..." />
 
-    <button class="btn btn-maps" style="padding: 12px; margin-bottom: 6px;" onclick="confirmarNoEntregaCustom()">Guardar reporte</button>
+    <button class="btn btn-maps" style="padding: 14px; margin-bottom: 6px;" onclick="confirmarNoEntregaCustom()">Guardar reporte</button>
     <button class="modal-cancel-btn" onclick="cerrarModal('modalNoEntrega')">Volver</button>
   </div>
 </div>
@@ -856,7 +870,6 @@
     }
   }
 
-  // Genera el enlace de Google Maps multi-parada con los destinos pendientes
   function actualizarBotonRutaMaps() {
     const btnAll = document.getElementById('btnAllMaps');
     if (ruta.length > 0 && currentIndex < ruta.length) {
@@ -901,7 +914,15 @@
     voiceTimer = setTimeout(() => {
       if ('speechSynthesis' in window && !vozSilenciada) {
         window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(texto);
+
+        // Sanitización para evitar que diga "grados" en pisos y departamentos
+        let textoLimpio = texto
+          .replace(/(\d+)\s*[°º]\s*([a-zA-Z])/gi, '$1 piso $2')
+          .replace(/(\d+)\s*[°º]/g, 'piso $1 ')
+          .replace(/\bpiso\s*(\d+)/gi, 'piso $1')
+          .replace(/\bdpto\b|\bdepto\b|\bdto\b/gi, 'departamento');
+
+        const utterance = new SpeechSynthesisUtterance(textoLimpio);
         utterance.lang = 'es-AR';
         utterance.rate = 0.93;
         utterance.pitch = 1.05;
@@ -1022,7 +1043,6 @@
     return str || "1";
   }
 
-  // Algoritmo TSP: Ordena un lote de puntos conectando el vecino más cercano
   function ordenarPorVecinoMasCercano(listaPuntos, puntoInicio) {
     let ordenados = [];
     let noVisitados = [...listaPuntos];
@@ -1056,7 +1076,6 @@
 
       const proximo = noVisitados.splice(bestIndex, 1)[0];
       
-      // Si el salto supera los 5 km, se marca como opcional
       if (bestDistance > 5.0 && bestDistance !== Infinity) {
         proximo.esOpcional = true;
       }
@@ -1090,7 +1109,7 @@
 REGLAS DE IDENTIFICACIÓN:
 1. "paquete": Extrae ÚNICAMENTE el número identificador limpio (ejemplo: si dice "P-019" devuelve "19").
 2. "remitente": Nombre y apellido del destinatario.
-3. "calle": Calle, altura y datos complementarios como piso, departamento, timbre o lote (ejemplo: "Av. Rivadavia 1234 4°B" o "Barrio Los Alamos Lote 12").
+3. "calle": Calle, altura y datos complementarios escritos como "Piso X Depto Y" (IMPORTANTE: NO uses símbolos de grados como "7°", escribe "Piso 7 Depto B" o "Lote 12").
 4. "localidad": Localidad, ciudad o barrio.
 
 Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
@@ -1098,7 +1117,7 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
   {
     "paquete": "19",
     "remitente": "Nombre y Apellido",
-    "calle": "Calle 123 2° A",
+    "calle": "Calle 123 Piso 2 Depto A",
     "localidad": "Localidad"
   }
 ]`;
@@ -1148,7 +1167,6 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
       updateStep(2, 60, "Geolocalizando e identificando opcionales...");
 
       const vistos = new Set();
-      // Si estamos en modo anexo, registramos las ya existentes para evitar duplicados
       if (modoAnexo) {
         ruta.forEach(r => {
           const key = (sanitizarNumeroPaquete(r.paquete) + '|' + r.direccion).toLowerCase();
@@ -1202,7 +1220,6 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
       let rutaFinal = [];
 
       if (modoAnexo && ruta.length > 0) {
-        // En anexo: conservamos entregados, y re-ruteamos pendientes + nuevos
         const yaEntregados = ruta.slice(0, currentIndex);
         const paradaActual = ruta[currentIndex] || userCoords;
         const pendientesPrevios = ruta.slice(currentIndex);
@@ -1213,7 +1230,6 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
         rutaFinal = [...yaEntregados, ...pendientesReordenados];
         modoAnexo = false;
       } else {
-        // Jornada nueva desde cero
         rutaFinal = ordenarPorVecinoMasCercano(puntosNuevos, userCoords);
         currentIndex = 0;
         historialAcciones = [];
@@ -1299,7 +1315,6 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
     const badgeEl = document.getElementById('curBadge');
     const btnMapsEl = document.getElementById('btnMaps');
 
-    // Estado visual: normal (violeta) vs opcional (ámbar)
     if (cur.esOpcional) {
       cardEl.className = 'card card-current card-optional';
       badgeEl.className = 'delivery-badge badge-optional';
