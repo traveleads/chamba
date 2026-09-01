@@ -20,14 +20,15 @@
       --text-main: #1C1C1E;
       --text-muted: #8E8E93;
       --accent: #007AFF;
+      --maps-color: #5856D6;
       --success: #34C759;
       --warning: #FF9500;
       --danger: #FF3B30;
       --border-subtle: rgba(0, 0, 0, 0.08);
       --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
       --btn-inner-light: inset 0 1px 0 rgba(255, 255, 255, 0.25);
-      --card-focus-border: 2.5px solid #007AFF;
-      --card-focus-glow: 0 4px 16px rgba(0, 122, 255, 0.12);
+      --card-focus-border: 2px solid rgba(88, 86, 214, 0.35);
+      --card-focus-glow: 0 4px 16px rgba(88, 86, 214, 0.08);
     }
 
     @media (prefers-color-scheme: dark) {
@@ -37,14 +38,15 @@
         --text-main: #F2F2F7;
         --text-muted: #98989D;
         --accent: #0A84FF;
-        --success: #1E6B34;
+        --maps-color: #5E5CE6;
+        --success: #30D158;
         --warning: #FFD60A;
         --danger: #FF453A;
         --border-subtle: rgba(255, 255, 255, 0.12);
         --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
         --btn-inner-light: inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        --card-focus-border: 2.5px solid #FFD60A;
-        --card-focus-glow: 0 0 14px rgba(255, 214, 10, 0.25);
+        --card-focus-border: 2px solid rgba(94, 92, 230, 0.5);
+        --card-focus-glow: 0 0 14px rgba(94, 92, 230, 0.25);
       }
     }
 
@@ -129,16 +131,29 @@
       cursor: pointer;
       text-decoration: none;
       border: 1px solid transparent;
-      box-shadow: var(--btn-inner-light), 0 4px 12px rgba(0, 0, 0, 0.12);
-      transition: transform 0.1s ease, filter 0.1s ease;
+      box-shadow: var(--btn-inner-light), 0 4px 12px rgba(0, 0, 0, 0.08);
+      transition: transform 0.1s ease, background 0.2s ease, color 0.2s ease;
       margin-bottom: 10px;
     }
-    .btn:active { transform: scale(0.98); filter: brightness(0.92); }
+    .btn:active { transform: scale(0.98); }
     
     .btn-primary { background: var(--accent); color: #FFFFFF; }
     .btn-secondary { background: rgba(10, 132, 255, 0.15); color: var(--accent); box-shadow: none; border: 1px dashed var(--accent); }
-    .btn-success { background: var(--success); color: #FFFFFF; }
-    .btn-maps { background: #5856D6; color: #FFFFFF; }
+    .btn-maps { background: var(--maps-color); color: #FFFFFF; }
+    
+    /* Botón Entregado en Gris sobrio */
+    .btn-delivered-neutral {
+      background: var(--bg);
+      color: var(--text-main);
+      border: 1px solid var(--border-subtle);
+      box-shadow: none;
+    }
+    .btn-delivered-neutral:active, .btn-delivered-neutral.active-success {
+      background: var(--success);
+      color: #FFFFFF;
+      border-color: transparent;
+    }
+
     .btn-undo {
       background: var(--card-bg);
       color: var(--text-muted);
@@ -167,9 +182,9 @@
       border: 1px solid var(--border-subtle);
       box-shadow: var(--card-shadow);
     }
-    .progress-header { display: flex; justify-content: space-between; font-size: 15px; font-weight: 700; color: var(--accent); margin-bottom: 10px; }
+    .progress-header { display: flex; justify-content: space-between; font-size: 15px; font-weight: 700; color: var(--maps-color); margin-bottom: 10px; }
     .progress-track { width: 100%; height: 8px; background: var(--border-subtle); border-radius: 4px; overflow: hidden; margin-bottom: 18px; }
-    .progress-fill { width: 0%; height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.4s ease; }
+    .progress-fill { width: 0%; height: 100%; background: var(--maps-color); border-radius: 4px; transition: width 0.4s ease; }
     
     .step-item {
       display: flex;
@@ -180,7 +195,7 @@
       margin-bottom: 12px;
     }
     .step-item:last-child { margin-bottom: 0; }
-    .step-item.active { color: var(--accent); font-weight: 600; }
+    .step-item.active { color: var(--maps-color); font-weight: 600; }
     .step-item.done { color: var(--success); font-weight: 600; }
     
     .step-icon {
@@ -201,8 +216,8 @@
 
     .scan-status {
       display: none;
-      background: rgba(10, 132, 255, 0.12);
-      color: var(--accent);
+      background: rgba(88, 86, 214, 0.12);
+      color: var(--maps-color);
       padding: 10px 14px;
       border-radius: 12px;
       font-size: 14px;
@@ -229,7 +244,7 @@
       font-size: 14px;
       font-weight: 500;
     }
-    .summary-content strong { color: var(--accent); font-weight: 700; }
+    .summary-content strong { color: var(--maps-color); font-weight: 700; }
     .live-progress-bar {
       position: absolute;
       bottom: 0;
@@ -244,8 +259,8 @@
       display: inline-block;
       font-size: 12px;
       font-weight: 700;
-      color: var(--accent);
-      background: rgba(10, 132, 255, 0.12);
+      color: var(--maps-color);
+      background: rgba(88, 86, 214, 0.12);
       padding: 4px 10px;
       border-radius: 8px;
       text-transform: uppercase;
@@ -256,18 +271,17 @@
     .pkg-row {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       margin-bottom: 6px;
     }
     .pkg-icon-box {
-      width: 42px;
-      height: 42px;
+      width: 44px;
+      height: 44px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      color: var(--accent);
     }
-    .pkg-icon-box svg { width: 100%; height: 100%; fill: currentColor; }
+    .pkg-icon-box svg { width: 100%; height: 100%; }
     .pkg-title { font-size: 44px; font-weight: 800; letter-spacing: -1.5px; color: var(--text-main); }
 
     .address-title { font-size: 22px; font-weight: 700; line-height: 1.25; margin-bottom: 4px; color: var(--text-main); }
@@ -282,7 +296,7 @@
       border-bottom: 1px solid var(--border-subtle);
     }
     .stop-row:last-child { border-bottom: none; }
-    .stop-num { font-weight: 800; font-size: 18px; min-width: 48px; color: var(--accent); }
+    .stop-num { font-weight: 800; font-size: 18px; min-width: 48px; color: var(--maps-color); }
     .stop-info { flex: 1; }
     .stop-addr { font-weight: 600; font-size: 15px; }
     .stop-person { font-size: 13px; color: var(--text-muted); }
@@ -382,7 +396,7 @@
       <input type="file" accept="image/*" capture="environment" onchange="agregarHoja(event)" />
     </label>
 
-    <button class="btn btn-success" id="btnProcessAll" style="display: none;" onclick="procesarTodasLasHojas()">
+    <button class="btn btn-maps" id="btnProcessAll" style="display: none;" onclick="procesarTodasLasHojas()">
       <svg viewBox="0 0 24 24"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
       Armar la ruta de hoy
     </button>
@@ -429,15 +443,23 @@
     <div class="delivery-badge">Próxima Parada</div>
     
     <div class="pkg-row">
-      <!-- Icono Encomienda con cinta y etiqueta de envío -->
+      <!-- Icono Caja de Cartón Realista con Cinta -->
       <div class="pkg-icon-box">
-        <svg viewBox="0 0 24 24">
-          <path d="M20 7l-8-4-8 4 8 4 8-4z" opacity="0.9"/>
-          <path d="M4 9v9l7 4V12.7L4 9z"/>
-          <path d="M20 9l-7 3.7V22l7-4V9z"/>
-          <!-- Cinta adhesiva y etiqueta -->
-          <path d="M10.5 4.75L13.5 6.25v15.5l-3-1.7V4.75z" fill="#FFF" opacity="0.35"/>
-          <path d="M15 13.5h3v2.5h-3z" fill="#FFF" opacity="0.8"/>
+        <svg viewBox="0 0 32 32">
+          <!-- Tapa superior cartón -->
+          <polygon points="16,2 30,8 16,14 2,8" fill="#D4A373"/>
+          <!-- Cara lateral izquierda -->
+          <polygon points="2,8 16,14 16,30 2,24" fill="#BC8A5F"/>
+          <!-- Cara lateral derecha -->
+          <polygon points="30,8 16,14 16,30 30,24" fill="#A47148"/>
+          <!-- Cinta de embalaje superior -->
+          <polygon points="14,3 18,5 18,13 14,11" fill="#E9D8A6" opacity="0.9"/>
+          <!-- Cinta de embalaje lateral derecha -->
+          <polygon points="16,14 19,15.5 19,29.5 16,28" fill="#D6C594" opacity="0.85"/>
+          <!-- Etiqueta de envío blanca -->
+          <polygon points="5,14 10,16 10,21 5,19" fill="#FFFFFF" opacity="0.9"/>
+          <line x1="6" y1="16.5" x2="9" y2="17.7" stroke="#4A3B32" stroke-width="0.8"/>
+          <line x1="6" y1="18.5" x2="8" y2="19.3" stroke="#4A3B32" stroke-width="0.8"/>
         </svg>
       </div>
       <div class="pkg-title" id="curPkg">#--</div>
@@ -446,12 +468,14 @@
     <div class="address-title" id="curAddress">--</div>
     <div class="receiver-name" id="curName">--</div>
 
-    <a id="btnMaps" class="btn btn-primary" target="_blank">
+    <!-- Navegar con GPS con el mismo color de Maps -->
+    <a id="btnMaps" class="btn btn-maps" target="_blank">
       <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
       Navegar con GPS
     </a>
     
-    <button class="btn btn-success" onclick="marcarEntregado()">
+    <!-- Botón Entregado en Gris neutro -->
+    <button id="btnEntregado" class="btn btn-delivered-neutral" onclick="marcarEntregado()">
       <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
       Entregado
     </button>
@@ -536,7 +560,7 @@
     <div style="margin-top: 10px; font-size: 13px; color: var(--text-muted); font-weight: 600;">Otras observaciones (opcional):</div>
     <input type="text" id="customReasonInput" class="modal-input" placeholder="Ej: No tiene timbre, portón cerrado..." />
 
-    <button class="btn btn-primary" style="padding: 12px; margin-bottom: 6px;" onclick="confirmarNoEntregaCustom()">Guardar reporte</button>
+    <button class="btn btn-maps" style="padding: 12px; margin-bottom: 6px;" onclick="confirmarNoEntregaCustom()">Guardar reporte</button>
     <button class="modal-cancel-btn" onclick="cerrarModal('modalNoEntrega')">Volver</button>
   </div>
 </div>
@@ -556,7 +580,7 @@
 
   const SVG_GEAR = `<svg class="spin-gear" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>`;
 
-  /* Generador de sonido de tecla con cuerpo y volumen audible */
+  /* Sonido de tecla optimizado: nítido, seco y con volumen equilibrado */
   function playKeyClick() {
     try {
       const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
@@ -566,36 +590,22 @@
 
       const now = audioCtx.currentTime;
 
-      // 1. Golpe táctil metálico seco (Snap de teclado)
-      const snapOsc = audioCtx.createOscillator();
-      const snapGain = audioCtx.createGain();
-      snapOsc.type = 'triangle';
-      snapOsc.frequency.setValueAtTime(1200, now);
-      snapOsc.frequency.exponentialRampToValueAtTime(350, now + 0.025);
-      snapGain.gain.setValueAtTime(0.75, now);
-      snapGain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
-      snapOsc.connect(snapGain);
-      snapGain.connect(audioCtx.destination);
-      snapOsc.start(now);
-      snapOsc.stop(now + 0.03);
-
-      // 2. Resonancia grave de pulsación
-      const thudOsc = audioCtx.createOscillator();
-      const thudGain = audioCtx.createGain();
-      thudOsc.type = 'sine';
-      thudOsc.frequency.setValueAtTime(280, now);
-      thudOsc.frequency.exponentialRampToValueAtTime(80, now + 0.035);
-      thudGain.gain.setValueAtTime(0.65, now);
-      thudGain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
-      thudOsc.connect(thudGain);
-      thudGain.connect(audioCtx.destination);
-      thudOsc.start(now);
-      thudOsc.stop(now + 0.04);
-
+      // Click de tecla seco y limpio
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1400, now);
+      osc.frequency.exponentialRampToValueAtTime(450, now + 0.015);
+      gain.gain.setValueAtTime(0.22, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.015);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.018);
     } catch (e) {}
 
     if ("vibrate" in navigator) {
-      try { navigator.vibrate(18); } catch (e) {}
+      try { navigator.vibrate(12); } catch (e) {}
     }
   }
 
@@ -1281,11 +1291,17 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
   }
 
   function marcarEntregado() {
-    historialAcciones.push({ tipo: 'entregado', index: currentIndex });
-    currentIndex++;
-    actualizarBotonRutaMaps();
-    guardarEstado();
-    actualizarVista(true);
+    const btn = document.getElementById('btnEntregado');
+    if (btn) btn.classList.add('active-success');
+
+    setTimeout(() => {
+      if (btn) btn.classList.remove('active-success');
+      historialAcciones.push({ tipo: 'entregado', index: currentIndex });
+      currentIndex++;
+      actualizarBotonRutaMaps();
+      guardarEstado();
+      actualizarVista(true);
+    }, 180);
   }
 
   function deshacerUltimo() {
