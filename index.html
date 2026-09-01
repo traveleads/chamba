@@ -525,51 +525,57 @@
   let cachedVoices = [];
   let userCoords = null;
   let audioCtx = null;
+  let voiceTimer = null;
 
-  const SVG_GEAR = `<svg class="spin-gear" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>`;
-
-  /* Generador de sonido de tecla/tap táctil moderno */
+  /* Síntesis de clic mecánico/táctil por ruido filtrado (Teclado nativo) */
   function playKeyClick() {
     try {
-      if (!audioCtx) {
-        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-        if (AudioContextClass) audioCtx = new AudioContextClass();
+      const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtxClass) return;
+      if (!audioCtx) audioCtx = new AudioCtxClass();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+
+      const sampleRate = audioCtx.sampleRate;
+      const bufferSize = Math.floor(sampleRate * 0.012); // 12 milisegundos
+      const buffer = audioCtx.createBuffer(1, bufferSize, sampleRate);
+      const data = buffer.getChannelData(0);
+
+      // Ruido blanco puro
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1);
       }
-      if (audioCtx && audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
-      if (audioCtx) {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        const now = audioCtx.currentTime;
 
-        // Frecuencia corta con caída rápida (simula click de teclado de smartphone)
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(800, now);
-        osc.frequency.exponentialRampToValueAtTime(120, now + 0.018);
+      const noise = audioCtx.createBufferSource();
+      noise.buffer = buffer;
 
-        gain.gain.setValueAtTime(0.25, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.018);
+      // Filtro paso banda centrado en el chasquido del teclado
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(2200, audioCtx.currentTime);
+      filter.Q.setValueAtTime(1.8, audioCtx.currentTime);
 
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
+      const gain = audioCtx.createGain();
+      const now = audioCtx.currentTime;
+      gain.gain.setValueAtTime(0.35, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.012);
 
-        osc.start(now);
-        osc.stop(now + 0.02);
-      }
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      noise.start(now);
     } catch (e) {
-      // Audio no bloqueante
+      // Audio no intrusivo
     }
 
-    // Micro-vibración háptica si el dispositivo lo soporta
     if ("vibrate" in navigator) {
-      try { navigator.vibrate(12); } catch (e) {}
+      try { navigator.vibrate(15); } catch (e) {}
     }
   }
 
   function vincularSonidosBotones() {
     document.addEventListener('click', (e) => {
-      const target = e.target.closest('button, .btn, .modal-action-btn, .modal-cancel-btn');
+      const target = e.target.closest('button, .btn, .modal-action-btn, .modal-cancel-btn, label.btn');
       if (target) {
         playKeyClick();
       }
@@ -788,28 +794,31 @@
     }
   }
 
-  function hablar(texto) {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(texto);
-      utterance.lang = 'es-AR';
-      utterance.rate = 0.93;
-      utterance.pitch = 1.05;
+  function hablarConRetraso(texto, delayMs = 550) {
+    if (voiceTimer) clearTimeout(voiceTimer);
+    voiceTimer = setTimeout(() => {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(texto);
+        utterance.lang = 'es-AR';
+        utterance.rate = 0.93;
+        utterance.pitch = 1.05;
 
-      if (cachedVoices.length === 0) {
-        cachedVoices = window.speechSynthesis.getVoices();
+        if (cachedVoices.length === 0) {
+          cachedVoices = window.speechSynthesis.getVoices();
+        }
+
+        const vozHumana = cachedVoices.find(v => 
+          (v.lang.includes('es') || v.lang.includes('ES')) &&
+          (v.name.includes('Natural') || v.name.includes('Neural') || v.name.includes('Google') || 
+           v.name.includes('Paulina') || v.name.includes('Mónica') || v.name.includes('Helena') ||
+           v.name.includes('Lucía') || v.name.includes('Siri') || v.name.includes('Microsoft'))
+        ) || cachedVoices.find(v => v.lang.startsWith('es'));
+
+        if (vozHumana) utterance.voice = vozHumana;
+        window.speechSynthesis.speak(utterance);
       }
-
-      const vozHumana = cachedVoices.find(v => 
-        (v.lang.includes('es') || v.lang.includes('ES')) &&
-        (v.name.includes('Natural') || v.name.includes('Neural') || v.name.includes('Google') || 
-         v.name.includes('Paulina') || v.name.includes('Mónica') || v.name.includes('Helena') ||
-         v.name.includes('Lucía') || v.name.includes('Siri') || v.name.includes('Microsoft'))
-      ) || cachedVoices.find(v => v.lang.startsWith('es'));
-
-      if (vozHumana) utterance.voice = vozHumana;
-      window.speechSynthesis.speak(utterance);
-    }
+    }, delayMs);
   }
 
   function desbloquearVoz() {
@@ -1134,9 +1143,7 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
       const primerPaquete = ruta[0].paquete;
       const zonasDetectadas = new Set(ruta.map(r => r.localidad || 'Centro')).size;
       
-      setTimeout(() => {
-        hablar(`Buenos días. Hoy tenemos ${ruta.length} repartos en ${zonasDetectadas} distritos. El primero es el paquete número ${primerPaquete} en ${ruta[0].direccion}.`);
-      }, 300);
+      hablarConRetraso(`Buenos días. Hoy tenemos ${ruta.length} repartos en ${zonasDetectadas} distritos. El primero es el paquete número ${primerPaquete} en ${ruta[0].direccion}.`, 600);
     }
   }
 
@@ -1167,7 +1174,7 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
       document.getElementById('nextSection').style.display = 'none';
       document.getElementById('summaryCard').style.display = 'none';
       document.getElementById('btnAllMaps').style.display = 'none';
-      hablar("Jornada completada. Muy buen trabajo.");
+      hablarConRetraso("Jornada completada. Muy buen trabajo.", 400);
       return;
     }
 
@@ -1211,9 +1218,7 @@ Devuelve ÚNICAMENTE un arreglo JSON con esta estructura exacta:
     }
 
     if (cantarPorVoz) {
-      setTimeout(() => {
-        hablar(`Próxima parada, paquete número ${cur.paquete}. En ${cur.direccion}`);
-      }, 300);
+      hablarConRetraso(`Próxima parada, paquete número ${cur.paquete}. En ${cur.direccion}`, 550);
     }
   }
 
